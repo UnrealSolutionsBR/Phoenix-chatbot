@@ -7,12 +7,36 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Función para agregar mensajes
     function appendMessage(text, sender) {
-        const msg = document.createElement('div');
-        msg.className = 'phoenix-message ' + sender;
-        msg.textContent = text;
-        messages.appendChild(msg);
+        const msgWrapper = document.createElement('div');
+        msgWrapper.className = 'phoenix-message ' + sender;
+    
+        if (sender === 'bot') {
+            const avatar = document.createElement('img');
+            avatar.src = 'https://i.ibb.co/JrsqQ2r/bot-avatar.png'; // Puedes cambiar esta URL por tu propia imagen
+            avatar.alt = 'Bot Avatar';
+            avatar.className = 'phoenix-bot-avatar';
+    
+            const content = document.createElement('div');
+            content.className = 'phoenix-message-content';
+            content.textContent = text;
+    
+            msgWrapper.appendChild(avatar);
+            msgWrapper.appendChild(content);
+    
+            const time = document.createElement('div');
+            time.className = 'phoenix-message-time';
+            const now = new Date();
+            time.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+            msgWrapper.appendChild(time);
+        } else {
+            msgWrapper.textContent = text;
+        }
+    
+        messages.appendChild(msgWrapper);
         messages.scrollTop = messages.scrollHeight;
     }
+    
 
     // Mostrar loader por 3 segundos, luego mostrar chat y primer mensaje del bot
     setTimeout(() => {
