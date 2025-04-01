@@ -5,7 +5,7 @@ const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const phoenixAssistants = [
     {
         name: "Valeria",
-        avatar: phoenixChatbotBaseUrl + "assets/img/Valeria.png"
+        avatar: phoenixChatbotBaseUrl + "assets/img/Valeria.PNG"
     },
     {
         name: "Andrés",
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const loader = document.getElementById('phoenix-loader');
     const chatbot = document.querySelector('.phoenix-chatbot-container');
 
-    // Agregar mensaje al chat
+    // Agregar mensaje
     function appendMessage(text, sender) {
         const msgWrapper = document.createElement('div');
         msgWrapper.className = 'phoenix-message ' + sender;
@@ -76,13 +76,36 @@ document.addEventListener('DOMContentLoaded', function () {
         messages.scrollTop = messages.scrollHeight;
     }
 
-    // Actualizar timestamps
-    function updateBotTimestamps() {
+    // Formatear tiempo relativo
+    function formatTimeElapsed(timestamp) {
         const now = new Date();
+        const diffMs = now - timestamp;
+        const diffMin = Math.floor(diffMs / 60000);
+        const diffHr = Math.floor(diffMin / 60);
+        const diffDay = Math.floor(diffHr / 24);
+        const diffWeek = Math.floor(diffDay / 7);
+        const diffMonth = Math.floor(diffDay / 30);
+        const diffYear = Math.floor(diffDay / 365);
+
+        if (diffMin < 60) {
+            return `Hace ${diffMin <= 0 ? '1 min' : diffMin + ' min'}`;
+        } else if (diffHr < 24) {
+            return `Hace ${diffHr === 1 ? '1 hora' : diffHr + ' horas'}`;
+        } else if (diffDay < 7) {
+            return `Hace ${diffDay === 1 ? '1 día' : diffDay + ' días'}`;
+        } else if (diffWeek < 4) {
+            return `Hace ${diffWeek === 1 ? '1 semana' : diffWeek + ' semanas'}`;
+        } else if (diffMonth < 12) {
+            return `Hace ${diffMonth === 1 ? '1 mes' : diffMonth + ' meses'}`;
+        } else {
+            return `Hace ${diffYear === 1 ? '1 año' : diffYear + ' años'}`;
+        }
+    }
+
+    // Actualizar textos de tiempo
+    function updateBotTimestamps() {
         botMessageTimes.forEach(({ meta, timestamp }) => {
-            const diffMs = now - timestamp;
-            const diffMins = Math.floor(diffMs / 60000);
-            meta.textContent = `${activeAssistant.name} • Hace ${diffMins === 0 ? '1 min' : (diffMins + 1) + ' min'}`;
+            meta.textContent = `${activeAssistant.name} • ${formatTimeElapsed(timestamp)}`;
         });
     }
 
@@ -118,13 +141,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 1000);
     });
 
-    // Enviar con Enter
+    // Permitir Enter
     input.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             sendBtn.click();
         }
     });
 
-    // Actualizar cada 60 segundos
+    // Actualizar cada minuto
     setInterval(updateBotTimestamps, 60000);
 });
