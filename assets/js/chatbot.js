@@ -17,25 +17,17 @@ const phoenixAssistants = [
     },
     {
         name: "Renata",
-        avatar: phoenixChatbotBaseUrl + "assets/img/Camila.png" // Puedes cambiar el avatar si tienes otro
+        avatar: phoenixChatbotBaseUrl + "assets/img/Camila.png"
     },
     {
         name: "Esteban",
-        avatar: phoenixChatbotBaseUrl + "assets/img/Andres.png" // Puedes cambiar el avatar si tienes otro
+        avatar: phoenixChatbotBaseUrl + "assets/img/Andres.png"
     }
 ];
 
 // Elegir asistente aleatorio
 const activeAssistant = phoenixAssistants[Math.floor(Math.random() * phoenixAssistants.length)];
-const startTimestamp = new Date(); // Marca de tiempo inicial para calcular "Hace X min"
-
-// Calcular tiempo transcurrido
-function getTimeElapsed() {
-    const now = new Date();
-    const diffMs = now - startTimestamp;
-    const diffMins = Math.floor(diffMs / 60000);
-    return `Hace ${diffMins === 0 ? '1 min' : (diffMins + 1) + ' min'}`;
-}
+let botMessageTimes = [];
 
 document.addEventListener('DOMContentLoaded', function () {
     const input = document.getElementById('phoenix-user-input');
@@ -44,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const loader = document.getElementById('phoenix-loader');
     const chatbot = document.querySelector('.phoenix-chatbot-container');
 
-    // Agregar mensaje al chat
+    // Función para agregar mensajes
     function appendMessage(text, sender) {
         const msgWrapper = document.createElement('div');
         msgWrapper.className = 'phoenix-message ' + sender;
@@ -60,7 +52,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const meta = document.createElement('div');
             meta.className = 'phoenix-message-meta';
-            meta.textContent = `${activeAssistant.name} • ${getTimeElapsed()}`;
+            const timestamp = new Date();
+            meta.dataset.timestamp = timestamp.getTime();
+            meta.textContent = `${activeAssistant.name} • Hace 1 min`;
+
+            botMessageTimes.push({ meta, timestamp });
 
             const textNode = document.createElement('div');
             textNode.textContent = text;
@@ -70,14 +66,27 @@ document.addEventListener('DOMContentLoaded', function () {
             msgWrapper.appendChild(avatar);
             msgWrapper.appendChild(bubble);
         } else {
-            msgWrapper.textContent = text;
+            const bubble = document.createElement('div');
+            bubble.className = 'phoenix-message user';
+            bubble.textContent = text;
+            msgWrapper.appendChild(bubble);
         }
 
         messages.appendChild(msgWrapper);
         messages.scrollTop = messages.scrollHeight;
     }
 
-    // Mostrar loader 3s y luego saludo inicial
+    // Función para actualizar timestamps del bot cada minuto
+    function updateBotTimestamps() {
+        const now = new Date();
+        botMessageTimes.forEach(({ meta, timestamp }) => {
+            const diffMs = now - timestamp;
+            const diffMins = Math.floor(diffMs / 60000);
+            meta.textContent = `${activeAssistant.name} • Hace ${diffMins === 0 ? '1 min' : (diffMins + 1) + ' min'}`;
+        });
+    }
+
+    // Mostrar loader por 3s y luego saludo inicial
     setTimeout(() => {
         loader.style.display = 'none';
         chatbot.style.display = 'block';
@@ -116,4 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
             sendBtn.click();
         }
     });
+
+    // Actualizar hora del bot cada minuto
+    setInterval(updateBotTimestamps, 60000);
 });
