@@ -5,7 +5,7 @@ const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const phoenixAssistants = [
     {
         name: "Valeria",
-        avatar: phoenixChatbotBaseUrl + "assets/img/Valeria.PNG"
+        avatar: phoenixChatbotBaseUrl + "assets/img/Valeria.png"
     },
     {
         name: "Andrés",
@@ -14,6 +14,14 @@ const phoenixAssistants = [
     {
         name: "Camila",
         avatar: phoenixChatbotBaseUrl + "assets/img/Camila.png"
+    },
+    {
+        name: "Esteban",
+        avatar: phoenixChatbotBaseUrl + "assets/img/Esteban.png"
+    },
+    {
+        name: "Renata",
+        avatar: phoenixChatbotBaseUrl + "assets/img/Renata.png"
     }
 ];
 
