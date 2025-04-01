@@ -58,14 +58,18 @@
    Mensaje del usuario
    ======================= */
 .phoenix-message.user {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+.phoenix-message-content-user {
     background-color: #5991FF;
     color: white;
     padding: 14px 18px;
     border-radius: 10px 10px 0px 10px;
     width: auto;
     max-width: 75%;
-    margin-left: auto;
-    margin-bottom: 20px;
     text-align: left;
     display: inline-block;
     word-wrap: break-word;

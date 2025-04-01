@@ -1,7 +1,7 @@
 // Obtener URL base del plugin desde wp_localize_script
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 
-// Definir asistentes disponibles
+// Asistentes disponibles
 const phoenixAssistants = [
     {
         name: "Valeria",
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const loader = document.getElementById('phoenix-loader');
     const chatbot = document.querySelector('.phoenix-chatbot-container');
 
-    // Función para agregar mensajes
+    // Agregar mensaje al chat
     function appendMessage(text, sender) {
         const msgWrapper = document.createElement('div');
         msgWrapper.className = 'phoenix-message ' + sender;
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
             msgWrapper.appendChild(bubble);
         } else {
             const bubble = document.createElement('div');
-            bubble.className = 'phoenix-message user';
+            bubble.className = 'phoenix-message-content-user';
             bubble.textContent = text;
             msgWrapper.appendChild(bubble);
         }
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
         messages.scrollTop = messages.scrollHeight;
     }
 
-    // Función para actualizar timestamps del bot cada minuto
+    // Actualizar timestamps
     function updateBotTimestamps() {
         const now = new Date();
         botMessageTimes.forEach(({ meta, timestamp }) => {
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Mostrar loader por 3s y luego saludo inicial
+    // Mostrar loader y saludo inicial
     setTimeout(() => {
         loader.style.display = 'none';
         chatbot.style.display = 'block';
@@ -113,19 +113,18 @@ document.addEventListener('DOMContentLoaded', function () {
         appendMessage(userInput, 'user');
         input.value = '';
 
-        // Simular respuesta del bot
         setTimeout(() => {
             appendMessage('Soy un bot. ¡Gracias por tu mensaje!', 'bot');
         }, 1000);
     });
 
-    // Permitir envío con Enter
+    // Enviar con Enter
     input.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             sendBtn.click();
         }
     });
 
-    // Actualizar hora del bot cada minuto
+    // Actualizar cada 60 segundos
     setInterval(updateBotTimestamps, 60000);
 });
