@@ -8,7 +8,7 @@
     background: transparent;
 }
 
-/* Área donde se renderizan los mensajes */
+/* Área de mensajes */
 .phoenix-chat-messages {
     max-height: 500px;
     overflow-y: auto;
@@ -46,12 +46,18 @@
     word-wrap: break-word;
     font-size: 15px;
     line-height: 1.4;
+    animation: phoenix-pop 0.25s ease-out;
 }
 
 .phoenix-message-meta {
     font-weight: 600;
     font-size: 14px;
     margin-bottom: 6px;
+}
+
+/* Texto dentro del bot bubble con animación */
+.phoenix-message-content > div:not(.phoenix-message-meta) {
+    animation: phoenix-fade-in-left 0.35s ease-out;
 }
 
 /* ======================
@@ -75,6 +81,8 @@
     word-wrap: break-word;
     font-size: 15px;
     line-height: 1.4;
+    animation: phoenix-pop 0.25s ease-out;
+    animation: phoenix-fade-in-left 0.35s ease-out;
 }
 
 /* ======================
@@ -106,7 +114,7 @@
 }
 
 /* ======================
-   Loader fullscreen
+   Loader
 ========================= */
 .phoenix-loader {
     position: fixed;
@@ -141,7 +149,7 @@
 ========================= */
 .phoenix-option-buttons {
     margin-top: 8px;
-    margin-left: 60px; /* para alinearlo con el bubble del bot */
+    margin-left: 60px;
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
@@ -161,4 +169,29 @@
 
 .phoenix-option-button:hover {
     background-color: #3c7eff;
+}
+
+/* ======================
+   Animaciones
+========================= */
+@keyframes phoenix-pop {
+    0% {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes phoenix-fade-in-left {
+    0% {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
