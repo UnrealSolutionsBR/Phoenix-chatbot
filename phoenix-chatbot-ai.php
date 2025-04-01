@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Phoenix Chatbot AI
- * Description: Chatbot AI con shortcode [Phoenix_chatbot]
+ * Description: Chatbot AI con múltiples asistentes y shortcode [Phoenix_chatbot]
  * Version: 1.0
  * Author: Unreal Solutions
  * Plugin URI: https://unrealsolutions.com.br/
@@ -18,6 +18,11 @@ add_action( 'wp_enqueue_scripts', 'phoenix_enqueue_chatbot_assets' );
 function phoenix_enqueue_chatbot_assets() {
     wp_enqueue_style( 'phoenix-chatbot-style', PHOENIX_CHATBOT_URL . 'assets/css/chatbot.css' );
     wp_enqueue_script( 'phoenix-chatbot-script', PHOENIX_CHATBOT_URL . 'assets/js/chatbot.js', [], null, true );
+
+    // Pasar la URL base al script
+    wp_localize_script( 'phoenix-chatbot-script', 'phoenixChatbotBaseUrlData', [
+        'baseUrl' => PHOENIX_CHATBOT_URL
+    ]);
 }
 
 // Registrar shortcode
@@ -25,12 +30,12 @@ add_shortcode( 'Phoenix_chatbot', 'phoenix_render_chatbot' );
 function phoenix_render_chatbot() {
     ob_start(); ?>
     
-    <!-- Loader -->
+    <!-- Loader con spinner -->
     <div class="phoenix-loader" id="phoenix-loader">
         <div class="phoenix-spinner"></div>
     </div>
 
-    <!-- Chatbot -->
+    <!-- Contenedor del chatbot -->
     <div class="phoenix-chatbot-container" style="display:none;">
         <div id="phoenix-chat-messages" class="phoenix-chat-messages"></div>
         <div class="phoenix-chat-input-container">
