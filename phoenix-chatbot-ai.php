@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Phoenix Chatbot AI
- * Description: Chatbot AI con múltiples asistentes y shortcode [Phoenix_chatbot]
+ * Description: Chatbot AI con múltiples asistentes y saludo dinámico según la hora del día.
  * Version: 1.0
  * Author: Unreal Solutions
  * Plugin URI: https://unrealsolutions.com.br/
@@ -16,10 +16,12 @@ define( 'PHOENIX_CHATBOT_URL', plugin_dir_url( __FILE__ ) );
 // Cargar estilos y scripts
 add_action( 'wp_enqueue_scripts', 'phoenix_enqueue_chatbot_assets' );
 function phoenix_enqueue_chatbot_assets() {
-    wp_enqueue_style( 'phoenix-chatbot-style', PHOENIX_CHATBOT_URL . 'assets/css/chatbot.css' );
-    wp_enqueue_script( 'phoenix-chatbot-script', PHOENIX_CHATBOT_URL . 'assets/js/chatbot.js', [], null, true );
+    $js_version  = filemtime( plugin_dir_path( __FILE__ ) . 'assets/js/chatbot.js' );
+    $css_version = filemtime( plugin_dir_path( __FILE__ ) . 'assets/css/chatbot.css' );
 
-    // Pasar la URL base al script
+    wp_enqueue_style( 'phoenix-chatbot-style', PHOENIX_CHATBOT_URL . 'assets/css/chatbot.css', [], $css_version );
+    wp_enqueue_script( 'phoenix-chatbot-script', PHOENIX_CHATBOT_URL . 'assets/js/chatbot.js', [], $js_version, true );
+
     wp_localize_script( 'phoenix-chatbot-script', 'phoenixChatbotBaseUrlData', [
         'baseUrl' => PHOENIX_CHATBOT_URL
     ]);
