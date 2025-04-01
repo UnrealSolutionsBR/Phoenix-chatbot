@@ -17,7 +17,7 @@ const phoenixAssistants = [
     }
 ];
 
-// Elegir asistente aleatorio al iniciar
+// Elegir asistente aleatorio
 const activeAssistant = phoenixAssistants[Math.floor(Math.random() * phoenixAssistants.length)];
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -27,31 +27,41 @@ document.addEventListener('DOMContentLoaded', function () {
     const loader = document.getElementById('phoenix-loader');
     const chatbot = document.querySelector('.phoenix-chatbot-container');
 
-    // Función para agregar mensajes al chat
+    // Función para agregar mensajes
     function appendMessage(text, sender) {
         const msgWrapper = document.createElement('div');
         msgWrapper.className = 'phoenix-message ' + sender;
 
         if (sender === 'bot') {
+            // Avatar
             const avatar = document.createElement('img');
             avatar.src = activeAssistant.avatar;
             avatar.alt = activeAssistant.name;
             avatar.className = 'phoenix-bot-avatar';
 
-            const content = document.createElement('div');
-            content.className = 'phoenix-message-content';
-            content.textContent = text;
+            // Burbuja de mensaje
+            const bubble = document.createElement('div');
+            bubble.className = 'phoenix-message-content';
+
+            // Meta info (nombre + hora)
+            const meta = document.createElement('div');
+            meta.className = 'phoenix-message-meta';
+            const now = new Date();
+            const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            meta.textContent = `${activeAssistant.name} • ${time}`;
+
+            // Texto del mensaje
+            const textNode = document.createElement('div');
+            textNode.textContent = text;
+
+            // Componer mensaje
+            bubble.appendChild(meta);
+            bubble.appendChild(textNode);
 
             msgWrapper.appendChild(avatar);
-            msgWrapper.appendChild(content);
-
-            const time = document.createElement('div');
-            time.className = 'phoenix-message-time';
-            const now = new Date();
-            time.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            msgWrapper.appendChild(time);
+            msgWrapper.appendChild(bubble);
         } else {
+            // Mensaje del usuario
             msgWrapper.textContent = text;
         }
 
@@ -59,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
         messages.scrollTop = messages.scrollHeight;
     }
 
-    // Mostrar loader y luego el chat con saludo según hora
+    // Mostrar loader por 3s, luego iniciar chat con saludo
     setTimeout(() => {
         loader.style.display = 'none';
         chatbot.style.display = 'block';
@@ -87,13 +97,13 @@ document.addEventListener('DOMContentLoaded', function () {
         appendMessage(userInput, 'user');
         input.value = '';
 
-        // Simulación de respuesta automática
+        // Simulación de respuesta del bot
         setTimeout(() => {
             appendMessage('Soy un bot. ¡Gracias por tu mensaje!', 'bot');
         }, 1000);
     });
 
-    // Enviar mensaje con tecla Enter
+    // Permitir enviar con Enter
     input.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             sendBtn.click();
