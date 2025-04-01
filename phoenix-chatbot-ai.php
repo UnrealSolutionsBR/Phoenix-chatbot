@@ -19,7 +19,7 @@ add_action('wp_head', function () {
     echo "<link href='https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap' rel='stylesheet'>";
 });
 
-// Cargar estilos y scripts con control de versión por caché
+// Cargar estilos y scripts con control de versión para evitar caché
 add_action( 'wp_enqueue_scripts', 'phoenix_enqueue_chatbot_assets' );
 function phoenix_enqueue_chatbot_assets() {
     $js_version  = filemtime( plugin_dir_path( __FILE__ ) . 'assets/js/chatbot.js' );
@@ -38,15 +38,18 @@ function phoenix_enqueue_chatbot_assets() {
 add_shortcode( 'Phoenix_chatbot', 'phoenix_render_chatbot' );
 function phoenix_render_chatbot() {
     ob_start(); ?>
-    
+
     <!-- Loader con spinner -->
     <div class="phoenix-loader" id="phoenix-loader">
         <div class="phoenix-spinner"></div>
     </div>
 
-    <!-- Contenedor del chatbot -->
+    <!-- Contenedor principal del chatbot -->
     <div class="phoenix-chatbot-container" style="display:none;">
-        <div id="phoenix-chat-messages" class="phoenix-chat-messages"></div>
+        <div id="phoenix-chat-messages" class="phoenix-chat-messages">
+            <!-- Aquí se inyectan los mensajes vía JavaScript -->
+        </div>
+
         <div class="phoenix-chat-input-container">
             <input type="text" id="phoenix-user-input" placeholder="Escribe tu mensaje..." />
             <button id="phoenix-send-btn">Enviar</button>
