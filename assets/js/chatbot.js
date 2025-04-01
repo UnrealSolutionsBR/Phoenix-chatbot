@@ -1,16 +1,13 @@
-// Obtener URL base del plugin desde wp_localize_script
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 
-// Lista de asistentes disponibles
 const phoenixAssistants = [
     { name: "Valeria", avatar: phoenixChatbotBaseUrl + "assets/img/Valeria.png" },
     { name: "Andrés", avatar: phoenixChatbotBaseUrl + "assets/img/Andres.png" },
     { name: "Camila", avatar: phoenixChatbotBaseUrl + "assets/img/Camila.png" },
-    { name: "Renata", avatar: phoenixChatbotBaseUrl + "assets/img/Camila.png" },
-    { name: "Esteban", avatar: phoenixChatbotBaseUrl + "assets/img/Andres.png" }
+    { name: "Renata", avatar: phoenixChatbotBaseUrl + "assets/img/Renata.png" },
+    { name: "Esteban", avatar: phoenixChatbotBaseUrl + "assets/img/Esteban.png" }
 ];
 
-// Selección aleatoria del asistente
 const activeAssistant = phoenixAssistants[Math.floor(Math.random() * phoenixAssistants.length)];
 let botMessageTimes = [];
 
@@ -21,7 +18,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const loader = document.getElementById('phoenix-loader');
     const chatbot = document.querySelector('.phoenix-chatbot-container');
 
-    // Añadir mensaje al chat
     function appendMessage(text, sender) {
         const msgWrapper = document.createElement('div');
         msgWrapper.className = 'phoenix-message ' + sender;
@@ -61,18 +57,17 @@ document.addEventListener('DOMContentLoaded', function () {
         messages.scrollTop = messages.scrollHeight;
     }
 
-    // Saludo inicial con botones de opción
     function appendMessageWithOptions(text, options) {
-        const msgWrapper = document.createElement('div');
-        msgWrapper.className = 'phoenix-message bot';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'phoenix-message bot';
 
         const avatar = document.createElement('img');
         avatar.src = activeAssistant.avatar;
         avatar.alt = activeAssistant.name;
         avatar.className = 'phoenix-bot-avatar';
 
-        const bubble = document.createElement('div');
-        bubble.className = 'phoenix-message-content';
+        const content = document.createElement('div');
+        content.className = 'phoenix-message-content';
 
         const meta = document.createElement('div');
         meta.className = 'phoenix-message-meta';
@@ -84,8 +79,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const textNode = document.createElement('div');
         textNode.textContent = text;
 
-        const buttonContainer = document.createElement('div');
-        buttonContainer.className = 'phoenix-option-buttons';
+        content.appendChild(meta);
+        content.appendChild(textNode);
+        wrapper.appendChild(avatar);
+        wrapper.appendChild(content);
+        messages.appendChild(wrapper);
+
+        const buttonRow = document.createElement('div');
+        buttonRow.className = 'phoenix-option-buttons';
 
         options.forEach(option => {
             const button = document.createElement('button');
@@ -93,26 +94,19 @@ document.addEventListener('DOMContentLoaded', function () {
             button.textContent = option;
             button.onclick = function () {
                 appendMessage(option, 'user');
-                msgWrapper.remove();
+                buttonRow.remove();
 
                 setTimeout(() => {
                     appendMessage(`Gracias por elegir "${option}". ¿En qué más puedo ayudarte?`, 'bot');
                 }, 1000);
             };
-            buttonContainer.appendChild(button);
+            buttonRow.appendChild(button);
         });
 
-        bubble.appendChild(meta);
-        bubble.appendChild(textNode);
-        bubble.appendChild(buttonContainer);
-        msgWrapper.appendChild(avatar);
-        msgWrapper.appendChild(bubble);
-
-        messages.appendChild(msgWrapper);
+        messages.appendChild(buttonRow);
         messages.scrollTop = messages.scrollHeight;
     }
 
-    // Formato de tiempo relativo
     function formatTimeElapsed(timestamp) {
         const now = new Date();
         const diffMs = now - timestamp;
@@ -131,44 +125,34 @@ document.addEventListener('DOMContentLoaded', function () {
         return `Hace ${diffYear === 1 ? '1 año' : diffYear + ' años'}`;
     }
 
-    // Actualizar textos de tiempo
     function updateBotTimestamps() {
         botMessageTimes.forEach(({ meta, timestamp }) => {
             meta.textContent = `${activeAssistant.name} • ${formatTimeElapsed(timestamp)}`;
         });
     }
 
-    // Mostrar loader y mensaje inicial con opciones
     setTimeout(() => {
         loader.style.display = 'none';
         chatbot.style.display = 'block';
-
         appendMessageWithOptions(
             '¡Hola! ¿En qué puedo ayudarte hoy?',
             ['Contratar servicio', 'Asistencia', 'Otro']
         );
     }, 3000);
 
-    // Evento de botón Enviar
     sendBtn.addEventListener('click', function () {
         const userInput = input.value.trim();
         if (!userInput) return;
-
         appendMessage(userInput, 'user');
         input.value = '';
-
         setTimeout(() => {
             appendMessage('Soy un bot. ¡Gracias por tu mensaje!', 'bot');
         }, 1000);
     });
 
-    // Permitir envío con Enter
     input.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            sendBtn.click();
-        }
+        if (e.key === 'Enter') sendBtn.click();
     });
 
-    // Actualizar tiempos cada minuto
     setInterval(updateBotTimestamps, 60000);
 });
