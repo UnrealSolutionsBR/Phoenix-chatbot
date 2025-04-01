@@ -59,12 +59,24 @@ document.addEventListener('DOMContentLoaded', function () {
         messages.scrollTop = messages.scrollHeight;
     }
 
-    // Mostrar loader y luego el chat con el saludo del asistente
+    // Mostrar loader y luego el chat con saludo según hora
     setTimeout(() => {
         loader.style.display = 'none';
         chatbot.style.display = 'block';
 
-        appendMessage(`Hola, soy ${activeAssistant.name}. ¿En qué puedo ayudarte hoy?`, 'bot');
+        const now = new Date();
+        const hour = now.getHours();
+        let greeting = '';
+
+        if (hour >= 6 && hour < 12) {
+            greeting = '¡Hola, buen día! 😊\n¿En qué puedo ayudarte esta mañana?';
+        } else if (hour >= 12 && hour < 19) {
+            greeting = '¡Hola, buenas tardes! 😊\n¿Cómo puedo ayudarte hoy?';
+        } else {
+            greeting = '¡Hola, buenas noches! 😊\n¿En qué puedo apoyarte en este momento?';
+        }
+
+        appendMessage(greeting, 'bot');
     }, 3000);
 
     // Enviar mensaje del usuario
