@@ -95,10 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
             button.onclick = function () {
                 appendMessage(option, 'user');
                 buttonRow.remove();
-
-                setTimeout(() => {
-                    appendMessage(`Gracias por elegir "${option}". ¿En qué más puedo ayudarte?`, 'bot');
-                }, 1000);
+                sendToAI(option);
             };
             buttonRow.appendChild(button);
         });
@@ -131,23 +128,54 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Enviar texto al backend (ChatGPT)
+    function sendToAI(userMessage) {
+        appendMessage('Escribiendo...', 'bot');
+
+        fetch(ajaxurl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                action: 'phoenix_chatbot_message',
+                message: userMessage
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            // Quitar el "Escribiendo..."
+            const last = messages.querySelector('.phoenix-message.bot:last-child');
+            if (last) last.remove();
+
+            if (data.success) {
+                appendMessage(data.data.reply, 'bot');
+            } else {
+                appendMessage("Lo siento, hubo un problema para obtener la respuesta 😕", 'bot');
+            }
+        })
+        .catch(() => {
+            const last = messages.querySelector('.phoenix-message.bot:last-child');
+            if (last) last.remove();
+            appendMessage("Hubo un error de conexión con el servidor.", 'bot');
+        });
+    }
+
+    // Loader inicial + saludo
     setTimeout(() => {
         loader.style.display = 'none';
-        chatbot.style.display = 'block';
+        chatbot.style.display = 'flex';
         appendMessageWithOptions(
             '¡Hola! ¿En qué puedo ayudarte hoy?',
             ['Contratar servicio', 'Asistencia', 'Otro']
         );
     }, 3000);
 
+    // Enviar mensaje del usuario
     sendBtn.addEventListener('click', function () {
         const userInput = input.value.trim();
         if (!userInput) return;
         appendMessage(userInput, 'user');
         input.value = '';
-        setTimeout(() => {
-            appendMessage('Soy un bot. ¡Gracias por tu mensaje!', 'bot');
-        }, 1000);
+        sendToAI(userInput);
     });
 
     input.addEventListener('keypress', function (e) {
