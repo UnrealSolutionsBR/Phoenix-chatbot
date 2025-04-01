@@ -1,31 +1,16 @@
 // Obtener URL base del plugin desde wp_localize_script
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 
-// Asistentes disponibles
+// Lista de asistentes disponibles
 const phoenixAssistants = [
-    {
-        name: "Valeria",
-        avatar: phoenixChatbotBaseUrl + "assets/img/Valeria.PNG"
-    },
-    {
-        name: "Andrés",
-        avatar: phoenixChatbotBaseUrl + "assets/img/Andres.png"
-    },
-    {
-        name: "Camila",
-        avatar: phoenixChatbotBaseUrl + "assets/img/Camila.png"
-    },
-    {
-        name: "Renata",
-        avatar: phoenixChatbotBaseUrl + "assets/img/Camila.png"
-    },
-    {
-        name: "Esteban",
-        avatar: phoenixChatbotBaseUrl + "assets/img/Andres.png"
-    }
+    { name: "Valeria", avatar: phoenixChatbotBaseUrl + "assets/img/Valeria.png" },
+    { name: "Andrés", avatar: phoenixChatbotBaseUrl + "assets/img/Andres.png" },
+    { name: "Camila", avatar: phoenixChatbotBaseUrl + "assets/img/Camila.png" },
+    { name: "Renata", avatar: phoenixChatbotBaseUrl + "assets/img/Camila.png" },
+    { name: "Esteban", avatar: phoenixChatbotBaseUrl + "assets/img/Andres.png" }
 ];
 
-// Elegir asistente aleatorio
+// Selección aleatoria del asistente
 const activeAssistant = phoenixAssistants[Math.floor(Math.random() * phoenixAssistants.length)];
 let botMessageTimes = [];
 
@@ -36,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const loader = document.getElementById('phoenix-loader');
     const chatbot = document.querySelector('.phoenix-chatbot-container');
 
-    // Agregar mensaje
+    // Añadir mensaje al chat
     function appendMessage(text, sender) {
         const msgWrapper = document.createElement('div');
         msgWrapper.className = 'phoenix-message ' + sender;
@@ -76,7 +61,58 @@ document.addEventListener('DOMContentLoaded', function () {
         messages.scrollTop = messages.scrollHeight;
     }
 
-    // Formatear tiempo relativo
+    // Saludo inicial con botones de opción
+    function appendMessageWithOptions(text, options) {
+        const msgWrapper = document.createElement('div');
+        msgWrapper.className = 'phoenix-message bot';
+
+        const avatar = document.createElement('img');
+        avatar.src = activeAssistant.avatar;
+        avatar.alt = activeAssistant.name;
+        avatar.className = 'phoenix-bot-avatar';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'phoenix-message-content';
+
+        const meta = document.createElement('div');
+        meta.className = 'phoenix-message-meta';
+        const timestamp = new Date();
+        meta.dataset.timestamp = timestamp.getTime();
+        meta.textContent = `${activeAssistant.name} • Hace 1 min`;
+        botMessageTimes.push({ meta, timestamp });
+
+        const textNode = document.createElement('div');
+        textNode.textContent = text;
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'phoenix-option-buttons';
+
+        options.forEach(option => {
+            const button = document.createElement('button');
+            button.className = 'phoenix-option-button';
+            button.textContent = option;
+            button.onclick = function () {
+                appendMessage(option, 'user');
+                msgWrapper.remove();
+
+                setTimeout(() => {
+                    appendMessage(`Gracias por elegir "${option}". ¿En qué más puedo ayudarte?`, 'bot');
+                }, 1000);
+            };
+            buttonContainer.appendChild(button);
+        });
+
+        bubble.appendChild(meta);
+        bubble.appendChild(textNode);
+        bubble.appendChild(buttonContainer);
+        msgWrapper.appendChild(avatar);
+        msgWrapper.appendChild(bubble);
+
+        messages.appendChild(msgWrapper);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    // Formato de tiempo relativo
     function formatTimeElapsed(timestamp) {
         const now = new Date();
         const diffMs = now - timestamp;
@@ -87,19 +123,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const diffMonth = Math.floor(diffDay / 30);
         const diffYear = Math.floor(diffDay / 365);
 
-        if (diffMin < 60) {
-            return `Hace ${diffMin <= 0 ? '1 min' : diffMin + ' min'}`;
-        } else if (diffHr < 24) {
-            return `Hace ${diffHr === 1 ? '1 hora' : diffHr + ' horas'}`;
-        } else if (diffDay < 7) {
-            return `Hace ${diffDay === 1 ? '1 día' : diffDay + ' días'}`;
-        } else if (diffWeek < 4) {
-            return `Hace ${diffWeek === 1 ? '1 semana' : diffWeek + ' semanas'}`;
-        } else if (diffMonth < 12) {
-            return `Hace ${diffMonth === 1 ? '1 mes' : diffMonth + ' meses'}`;
-        } else {
-            return `Hace ${diffYear === 1 ? '1 año' : diffYear + ' años'}`;
-        }
+        if (diffMin < 60) return `Hace ${diffMin <= 0 ? '1 min' : diffMin + ' min'}`;
+        if (diffHr < 24) return `Hace ${diffHr === 1 ? '1 hora' : diffHr + ' horas'}`;
+        if (diffDay < 7) return `Hace ${diffDay === 1 ? '1 día' : diffDay + ' días'}`;
+        if (diffWeek < 4) return `Hace ${diffWeek === 1 ? '1 semana' : diffWeek + ' semanas'}`;
+        if (diffMonth < 12) return `Hace ${diffMonth === 1 ? '1 mes' : diffMonth + ' meses'}`;
+        return `Hace ${diffYear === 1 ? '1 año' : diffYear + ' años'}`;
     }
 
     // Actualizar textos de tiempo
@@ -109,26 +138,18 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Mostrar loader y saludo inicial
+    // Mostrar loader y mensaje inicial con opciones
     setTimeout(() => {
         loader.style.display = 'none';
         chatbot.style.display = 'block';
 
-        const hour = new Date().getHours();
-        let greeting = '';
-
-        if (hour >= 6 && hour < 12) {
-            greeting = '¡Hola, buen día! 😊 ¿En qué puedo ayudarte esta mañana?';
-        } else if (hour >= 12 && hour < 19) {
-            greeting = '¡Hola, buenas tardes! 😊 ¿Cómo puedo ayudarte hoy?';
-        } else {
-            greeting = '¡Hola, buenas noches! 😊 ¿En qué puedo apoyarte en este momento?';
-        }
-
-        appendMessage(greeting, 'bot');
+        appendMessageWithOptions(
+            '¡Hola! ¿En qué puedo ayudarte hoy?',
+            ['Contratar servicio', 'Asistencia', 'Otro']
+        );
     }, 3000);
 
-    // Enviar mensaje del usuario
+    // Evento de botón Enviar
     sendBtn.addEventListener('click', function () {
         const userInput = input.value.trim();
         if (!userInput) return;
@@ -141,13 +162,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 1000);
     });
 
-    // Permitir Enter
+    // Permitir envío con Enter
     input.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             sendBtn.click();
         }
     });
 
-    // Actualizar cada minuto
+    // Actualizar tiempos cada minuto
     setInterval(updateBotTimestamps, 60000);
 });

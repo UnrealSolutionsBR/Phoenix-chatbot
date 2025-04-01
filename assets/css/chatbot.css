@@ -1,4 +1,4 @@
-/* Contenedor principal */
+/* Contenedor general */
 .phoenix-chatbot-container {
     width: 100%;
     max-width: 800px;
@@ -17,9 +17,9 @@
     border-radius: 12px;
 }
 
-/* =======================
-   Mensaje del asistente
-   ======================= */
+/* =====================
+   Mensaje del bot
+   ===================== */
 .phoenix-message.bot {
     display: flex;
     align-items: flex-start;
@@ -54,9 +54,9 @@
     margin-bottom: 6px;
 }
 
-/* =======================
+/* =====================
    Mensaje del usuario
-   ======================= */
+   ===================== */
 .phoenix-message.user {
     display: flex;
     justify-content: flex-end;
@@ -77,9 +77,9 @@
     line-height: 1.4;
 }
 
-/* =======================
+/* =====================
    Input y botón de envío
-   ======================= */
+   ===================== */
 .phoenix-chat-input-container {
     display: flex;
     border-top: 1px solid #ccc;
@@ -105,9 +105,9 @@
     border-radius: 0 6px 6px 0;
 }
 
-/* =======================
-   Loader
-   ======================= */
+/* =====================
+   Loader full pantalla
+   ===================== */
 .phoenix-loader {
     position: fixed;
     top: 0;
@@ -135,4 +135,30 @@
 @keyframes phoenix-spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* =====================
+   Botones de opción
+   ===================== */
+.phoenix-option-buttons {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.phoenix-option-button {
+    background-color: #00c39a;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: 'Open Sans', sans-serif;
+    transition: background-color 0.2s;
+}
+
+.phoenix-option-button:hover {
+    background-color: #00a482;
 }
