@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function sendToAI(userMessage) {
         appendMessage('Escribiendo...', 'bot');
 
-        fetch(ajaxurl, {
+        fetch(phoenixChatbotBaseUrlData.ajaxurl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
