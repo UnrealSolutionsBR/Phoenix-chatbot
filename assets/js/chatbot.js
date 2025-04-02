@@ -1,5 +1,6 @@
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const greetings = phoenixChatbotBaseUrlData.greetings;
+const flow = phoenixChatbotBaseUrlData.flow;
 
 const phoenixAssistants = [
     { name: "Valeria", avatar: phoenixChatbotBaseUrl + "assets/img/Valeria.png" },
@@ -86,13 +87,30 @@ document.addEventListener('DOMContentLoaded', function () {
             button.onclick = function () {
                 appendMessage(option, 'user');
                 buttonRow.remove();
-                sendToAI(option);
+
+                if (option === "Contratar servicio") {
+                    showFlowStep('collect_user_data');
+                } else {
+                    sendToAI(option);
+                }
             };
             buttonRow.appendChild(button);
         });
 
         messages.appendChild(buttonRow);
         messages.scrollTop = messages.scrollHeight;
+    }
+
+    function showFlowStep(stepKey) {
+        const stepData = flow?.[stepKey];
+        if (!stepData || !Array.isArray(stepData)) return;
+
+        stepData.forEach((text, index) => {
+            setTimeout(() => {
+                appendMessage(text, 'bot');
+                phoenixConversationHistory.push({ role: 'assistant', content: text });
+            }, index * 1200);
+        });
     }
 
     function sendToAI(userMessage) {
