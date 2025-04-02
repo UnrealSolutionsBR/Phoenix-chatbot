@@ -16,7 +16,7 @@ let botMessageTimes = [];
 let phoenixConversationHistory = [
     {
         role: 'system',
-        content: `Eres un asistente virtual profesional de Unreal Solutions. Tu objetivo es guiar al usuario paso a paso en una conversación estructurada según las intenciones del flujo JSON. Evita hablar fuera de contexto si el flujo está activo.`
+        content: `Eres un asistente virtual profesional de Unreal Solutions. Tu objetivo es guiar al usuario paso a paso en una conversación estructurada según las intenciones del flujo JSON. No avances si el usuario no proporciona datos válidos.`
     }
 ];
 
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function appendMessageWithOptions(text, options) {
-        appendMessage(text, 'bot');
+        if (text) appendMessage(text, 'bot');
 
         const buttonRow = document.createElement('div');
         buttonRow.className = 'phoenix-option-buttons';
@@ -105,7 +105,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!currentFlow) return;
 
-        // Si es objeto (como lead_qualification), lanzar pregunta + opciones
         if (typeof currentFlow === 'object' && !Array.isArray(currentFlow)) {
             appendMessage(currentFlow.question, 'bot');
             if (currentFlow.options && Array.isArray(currentFlow.options)) {
@@ -114,7 +113,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Si es array, iniciar secuencia (como collect_user_data)
         if (Array.isArray(currentFlow)) {
             askNextFlowQuestion();
         }
@@ -124,7 +122,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!currentFlow || !Array.isArray(currentFlow)) return;
 
         if (currentFlowStep >= currentFlow.length) {
-            // Pasar al siguiente flujo si existe
             if (currentFlowKey === 'collect_user_data' && flow.lead_qualification) {
                 runDynamicFlow('lead_qualification');
             }
@@ -164,6 +161,11 @@ document.addEventListener('DOMContentLoaded', function () {
     function isValidEmail(email) {
         const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return pattern.test(email);
+    }
+
+    function isValidPhone(phone) {
+        const pattern = /^[\d\s\+\-\(\)]{7,}$/;
+        return pattern.test(phone);
     }
 
     function getGreetingByTime() {
@@ -222,29 +224,41 @@ document.addEventListener('DOMContentLoaded', function () {
         appendMessage(userInput, 'user');
         phoenixConversationHistory.push({ role: 'user', content: userInput });
 
-        // Si estamos en un flujo activo
         if (currentFlow) {
             const intent = currentFlow[currentFlowStep];
 
-            if (intent === 'pedir_nombre') userData.name = userInput;
-            if (intent === 'pedir_email') {
+            if (intent === 'pedir_nombre') {
+                userData.name = userInput;
+                currentFlowStep++;
+            }
+
+            else if (intent === 'pedir_email') {
                 if (!isValidEmail(userInput)) {
-                    appendMessage("Ese correo no parece válido, ¿podrías revisarlo?", 'bot');
-                    phoenixConversationHistory.push({ role: 'assistant', content: "Ese correo no parece válido, ¿podrías revisarlo?" });
+                    appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", 'bot');
+                    phoenixConversationHistory.push({ role: 'assistant', content: "Ese correo no parece válido. ¿Podrías revisarlo?" });
                     input.value = '';
                     return;
                 }
                 userData.email = userInput;
+                currentFlowStep++;
             }
-            if (intent === 'pedir_telefono') userData.phone = userInput;
 
-            currentFlowStep++;
+            else if (intent === 'pedir_telefono') {
+                if (!isValidPhone(userInput)) {
+                    appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", 'bot');
+                    phoenixConversationHistory.push({ role: 'assistant', content: "Ese número no parece válido. Intenta escribirlo nuevamente, por favor." });
+                    input.value = '';
+                    return;
+                }
+                userData.phone = userInput;
+                currentFlowStep++;
+            }
+
             input.value = '';
             setTimeout(askNextFlowQuestion, 600);
             return;
         }
 
-        // Si no hay flujo activo, se permite hablar libre
         input.value = '';
         sendToAI(userInput);
     });
