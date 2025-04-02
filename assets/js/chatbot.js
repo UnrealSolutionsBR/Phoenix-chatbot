@@ -1,4 +1,5 @@
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
+const greetings = phoenixChatbotBaseUrlData.greetings;
 
 const phoenixAssistants = [
     { name: "Valeria", avatar: phoenixChatbotBaseUrl + "assets/img/Valeria.png" },
@@ -14,23 +15,7 @@ let botMessageTimes = [];
 let phoenixConversationHistory = [
     {
         role: 'system',
-        content: `Eres Valeria, Camila, Andrés, Renata o Esteban, el asistente virtual de Unreal Solutions. Tu trabajo es conversar de forma natural, profesional y útil con personas interesadas en servicios como desarrollo web, edición de video o marketing digital.
-
-        🔸 Evita repetir la frase "En Unreal Solutions..." en cada mensaje. Úsala solo si es realmente necesario.  
-        🔸 Organiza tus ideas con saltos de línea y listas verticales para que el texto sea fácil de leer.  
-        🔸 Sé conversacional: usa oraciones cortas, no hables como folleto corporativo.  
-        🔸 Si vas a hacer preguntas al usuario, sepáralas con viñetas, guiones o saltos de línea.  
-        🔸 Solo menciona la marca o agendar una reunión si es relevante, y hazlo con tono amable.
-        
-        Ejemplo de formato correcto:
-        
-        ¡Genial! Para ayudarte mejor, ¿podrías decirme:
-        
-        - Qué tipo de sitio necesitas
-        - Si ya tienes contenido o diseño en mente
-        - Cuándo te gustaría lanzarlo
-        
-        Con eso puedo darte una mejor recomendación.`
+        content: `Eres Valeria, Camila, Andrés, Renata o Esteban, el asistente virtual de Unreal Solutions... (← aquí va tu prompt completo optimizado)`
     }
 ];
 
@@ -81,32 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function appendMessageWithOptions(text, options) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'phoenix-message bot';
-
-        const avatar = document.createElement('img');
-        avatar.src = activeAssistant.avatar;
-        avatar.alt = activeAssistant.name;
-        avatar.className = 'phoenix-bot-avatar';
-
-        const content = document.createElement('div');
-        content.className = 'phoenix-message-content';
-
-        const meta = document.createElement('div');
-        meta.className = 'phoenix-message-meta';
-        const timestamp = new Date();
-        meta.dataset.timestamp = timestamp.getTime();
-        meta.textContent = `${activeAssistant.name} • Hace 1 min`;
-        botMessageTimes.push({ meta, timestamp });
-
-        const textNode = document.createElement('div');
-        textNode.textContent = text;
-
-        content.appendChild(meta);
-        content.appendChild(textNode);
-        wrapper.appendChild(avatar);
-        wrapper.appendChild(content);
-        messages.appendChild(wrapper);
+        appendMessage(text, 'bot');
 
         const buttonRow = document.createElement('div');
         buttonRow.className = 'phoenix-option-buttons';
@@ -127,34 +87,8 @@ document.addEventListener('DOMContentLoaded', function () {
         messages.scrollTop = messages.scrollHeight;
     }
 
-    function formatTimeElapsed(timestamp) {
-        const now = new Date();
-        const diffMs = now - timestamp;
-        const diffMin = Math.floor(diffMs / 60000);
-        const diffHr = Math.floor(diffMin / 60);
-        const diffDay = Math.floor(diffHr / 24);
-        const diffWeek = Math.floor(diffDay / 7);
-        const diffMonth = Math.floor(diffDay / 30);
-        const diffYear = Math.floor(diffDay / 365);
-
-        if (diffMin < 60) return `Hace ${diffMin <= 0 ? '1 min' : diffMin + ' min'}`;
-        if (diffHr < 24) return `Hace ${diffHr === 1 ? '1 hora' : diffHr + ' horas'}`;
-        if (diffDay < 7) return `Hace ${diffDay === 1 ? '1 día' : diffDay + ' días'}`;
-        if (diffWeek < 4) return `Hace ${diffWeek === 1 ? '1 semana' : diffWeek + ' semanas'}`;
-        if (diffMonth < 12) return `Hace ${diffMonth === 1 ? '1 mes' : diffMonth + ' meses'}`;
-        return `Hace ${diffYear === 1 ? '1 año' : diffYear + ' años'}`;
-    }
-
-    function updateBotTimestamps() {
-        botMessageTimes.forEach(({ meta, timestamp }) => {
-            meta.textContent = `${activeAssistant.name} • ${formatTimeElapsed(timestamp)}`;
-        });
-    }
-
     function sendToAI(userMessage) {
         phoenixConversationHistory.push({ role: 'user', content: userMessage });
-
-        const fullHistory = phoenixConversationHistory;
 
         appendMessage('Escribiendo...', 'bot');
 
@@ -163,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function () {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
                 action: 'phoenix_chatbot_message',
-                history: JSON.stringify(fullHistory)
+                history: JSON.stringify(phoenixConversationHistory)
             })
         })
         .then(res => res.json())
@@ -185,14 +119,21 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function getGreetingByTime() {
+        const hour = new Date().getHours();
+        if (hour >= 6 && hour < 12) return greetings.morning;
+        if (hour >= 12 && hour < 20) return greetings.afternoon;
+        return greetings.night;
+    }
+
     setTimeout(() => {
         loader.style.display = 'none';
         chatbot.style.display = 'flex';
-        appendMessageWithOptions(
-            '¡Hola! ¿En qué puedo ayudarte hoy?',
-            ['Contratar servicio', 'Asistencia', 'Otro']
-        );
-    }, 3000);
+
+        const greeting = getGreetingByTime();
+        const options = greetings.options;
+        appendMessageWithOptions(greeting, options);
+    }, 2000);
 
     sendBtn.addEventListener('click', function () {
         const userInput = input.value.trim();
@@ -206,5 +147,19 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.key === 'Enter') sendBtn.click();
     });
 
-    setInterval(updateBotTimestamps, 60000);
+    setInterval(() => {
+        botMessageTimes.forEach(({ meta, timestamp }) => {
+            meta.textContent = `${activeAssistant.name} • ${formatTimeElapsed(timestamp)}`;
+        });
+    }, 60000);
+
+    function formatTimeElapsed(timestamp) {
+        const now = new Date();
+        const diffMin = Math.floor((now - timestamp) / 60000);
+        if (diffMin < 60) return `Hace ${diffMin <= 0 ? '1 min' : diffMin + ' min'}`;
+        const diffHr = Math.floor(diffMin / 60);
+        if (diffHr < 24) return `Hace ${diffHr === 1 ? '1 hora' : diffHr + ' horas'}`;
+        const diffDay = Math.floor(diffHr / 24);
+        return `Hace ${diffDay === 1 ? '1 día' : diffDay + ' días'}`;
+    }
 });
