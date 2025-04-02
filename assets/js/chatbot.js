@@ -16,7 +16,7 @@ let botMessageTimes = [];
 let phoenixConversationHistory = [
     {
         role: 'system',
-        content: `Eres un asistente virtual profesional de Unreal Solutions. Tu objetivo es guiar al usuario paso a paso en una conversación, haciendo preguntas naturales, cercanas y claras según cada intención recibida del sistema.`
+        content: `Eres un asistente virtual profesional de Unreal Solutions. Tu objetivo es guiar al usuario paso a paso en una conversación estructurada según las intenciones del flujo JSON. Evita hablar fuera de contexto si el flujo está activo.`
     }
 ];
 
@@ -102,19 +102,32 @@ document.addEventListener('DOMContentLoaded', function () {
         currentFlow = flow?.[stepKey];
         currentFlowKey = stepKey;
         currentFlowStep = 0;
-        if (!currentFlow || !Array.isArray(currentFlow)) return;
 
-        askNextFlowQuestion();
+        if (!currentFlow) return;
+
+        // Si es objeto (como lead_qualification), lanzar pregunta + opciones
+        if (typeof currentFlow === 'object' && !Array.isArray(currentFlow)) {
+            appendMessage(currentFlow.question, 'bot');
+            if (currentFlow.options && Array.isArray(currentFlow.options)) {
+                appendMessageWithOptions('', currentFlow.options);
+            }
+            return;
+        }
+
+        // Si es array, iniciar secuencia (como collect_user_data)
+        if (Array.isArray(currentFlow)) {
+            askNextFlowQuestion();
+        }
     }
 
     function askNextFlowQuestion() {
-        if (!currentFlow || currentFlowStep >= currentFlow.length) {
-            // Cambiar automáticamente al siguiente flujo si está definido
+        if (!currentFlow || !Array.isArray(currentFlow)) return;
+
+        if (currentFlowStep >= currentFlow.length) {
+            // Pasar al siguiente flujo si existe
             if (currentFlowKey === 'collect_user_data' && flow.lead_qualification) {
                 runDynamicFlow('lead_qualification');
-                return;
             }
-
             currentFlow = null;
             currentFlowKey = null;
             currentFlowStep = 0;
@@ -153,6 +166,13 @@ document.addEventListener('DOMContentLoaded', function () {
         return pattern.test(email);
     }
 
+    function getGreetingByTime() {
+        const hour = new Date().getHours();
+        if (hour >= 6 && hour < 12) return greetings.morning;
+        if (hour >= 12 && hour < 20) return greetings.afternoon;
+        return greetings.night;
+    }
+
     function sendToAI(userMessage) {
         phoenixConversationHistory.push({ role: 'user', content: userMessage });
         appendMessage('Escribiendo...', 'bot');
@@ -184,13 +204,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function getGreetingByTime() {
-        const hour = new Date().getHours();
-        if (hour >= 6 && hour < 12) return greetings.morning;
-        if (hour >= 12 && hour < 20) return greetings.afternoon;
-        return greetings.night;
-    }
-
     setTimeout(() => {
         loader.style.display = 'none';
         chatbot.style.display = 'flex';
@@ -209,27 +222,21 @@ document.addEventListener('DOMContentLoaded', function () {
         appendMessage(userInput, 'user');
         phoenixConversationHistory.push({ role: 'user', content: userInput });
 
-        // Validación y flujo guiado
+        // Si estamos en un flujo activo
         if (currentFlow) {
             const intent = currentFlow[currentFlowStep];
 
-            if (intent === 'pedir_nombre') {
-                userData.name = userInput;
-            }
-
+            if (intent === 'pedir_nombre') userData.name = userInput;
             if (intent === 'pedir_email') {
                 if (!isValidEmail(userInput)) {
-                    appendMessage("Parece que el correo no es válido. ¿Podrías verificarlo?", 'bot');
-                    phoenixConversationHistory.push({ role: 'assistant', content: "Parece que el correo no es válido. ¿Podrías verificarlo?" });
+                    appendMessage("Ese correo no parece válido, ¿podrías revisarlo?", 'bot');
+                    phoenixConversationHistory.push({ role: 'assistant', content: "Ese correo no parece válido, ¿podrías revisarlo?" });
                     input.value = '';
-                    return; // NO avanzar al siguiente paso
+                    return;
                 }
                 userData.email = userInput;
             }
-
-            if (intent === 'pedir_telefono') {
-                userData.phone = userInput;
-            }
+            if (intent === 'pedir_telefono') userData.phone = userInput;
 
             currentFlowStep++;
             input.value = '';
@@ -237,6 +244,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Si no hay flujo activo, se permite hablar libre
         input.value = '';
         sendToAI(userInput);
     });
