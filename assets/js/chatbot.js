@@ -16,11 +16,12 @@ let botMessageTimes = [];
 let phoenixConversationHistory = [
     {
         role: 'system',
-        content: `Eres Valeria, Camila, Andrés, Renata o Esteban, el asistente virtual de Unreal Solutions. Tu trabajo es conversar de forma natural, profesional y útil con personas interesadas en servicios como desarrollo web, edición de video o marketing digital.`
+        content: `Eres un asistente virtual profesional de Unreal Solutions. Tu objetivo es guiar al usuario paso a paso en una conversación, haciendo preguntas naturales, cercanas y claras según cada intención recibida del sistema.`
     }
 ];
 
 let currentFlow = null;
+let currentFlowKey = null;
 let currentFlowStep = 0;
 let userData = {};
 
@@ -85,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 buttonRow.remove();
 
                 if (option === "Contratar servicio") {
-                    runSequentialFlow('collect_user_data');
+                    runDynamicFlow('collect_user_data');
                 } else {
                     sendToAI(option);
                 }
@@ -97,33 +98,52 @@ document.addEventListener('DOMContentLoaded', function () {
         messages.scrollTop = messages.scrollHeight;
     }
 
-    function runSequentialFlow(stepKey) {
+    function runDynamicFlow(stepKey) {
         currentFlow = flow?.[stepKey];
+        currentFlowKey = stepKey;
         currentFlowStep = 0;
         if (!currentFlow || !Array.isArray(currentFlow)) return;
 
-        showNextFlowMessage();
+        askNextFlowQuestion();
     }
 
-    function showNextFlowMessage() {
+    function askNextFlowQuestion() {
         if (!currentFlow || currentFlowStep >= currentFlow.length) {
             currentFlow = null;
+            currentFlowKey = null;
             currentFlowStep = 0;
             return;
         }
 
-        let message = currentFlow[currentFlowStep];
-        if (typeof message === 'string' && message.includes('{name}')) {
-            message = message.replace('{name}', userData.name || 'usuario');
-        }
+        const currentIntent = currentFlow[currentFlowStep];
 
-        appendMessage(message, 'bot');
-        phoenixConversationHistory.push({ role: 'assistant', content: message });
+        fetch(phoenixChatbotBaseUrlData.ajaxurl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                action: 'phoenix_generate_flow_message',
+                intent: currentIntent,
+                history: JSON.stringify(phoenixConversationHistory),
+                user_data: JSON.stringify(userData)
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const message = data.data.reply;
+                appendMessage(message, 'bot');
+                phoenixConversationHistory.push({ role: 'assistant', content: message });
+            } else {
+                appendMessage("Hubo un problema generando la pregunta 😕", 'bot');
+            }
+        })
+        .catch(() => {
+            appendMessage("Error de conexión con el servidor.", 'bot');
+        });
     }
 
     function sendToAI(userMessage) {
         phoenixConversationHistory.push({ role: 'user', content: userMessage });
-
         appendMessage('Escribiendo...', 'bot');
 
         fetch(phoenixChatbotBaseUrlData.ajaxurl, {
@@ -178,15 +198,15 @@ document.addEventListener('DOMContentLoaded', function () {
         appendMessage(userInput, 'user');
         phoenixConversationHistory.push({ role: 'user', content: userInput });
 
-        // Guardar data del usuario por paso
+        // Si estamos en un flujo dinámico, guarda respuesta y continúa
         if (currentFlow) {
-            if (currentFlowStep === 0) userData.name = userInput;
-            if (currentFlowStep === 1) userData.email = userInput;
-            if (currentFlowStep === 2) userData.phone = userInput;
+            if (currentFlow[currentFlowStep] === "pedir_nombre") userData.name = userInput;
+            if (currentFlow[currentFlowStep] === "pedir_email") userData.email = userInput;
+            if (currentFlow[currentFlowStep] === "pedir_telefono") userData.phone = userInput;
 
             currentFlowStep++;
-            setTimeout(showNextFlowMessage, 500);
             input.value = '';
+            setTimeout(askNextFlowQuestion, 600);
             return;
         }
 
