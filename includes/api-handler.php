@@ -20,6 +20,7 @@ function phoenix_handle_chatbot_message() {
         wp_send_json_error(['error' => 'API Key no configurada.']);
     }
 
+    // Decodificar historial recibido desde el frontend
     $history = json_decode(stripslashes($_POST['history']), true);
 
     if (empty($history) || !is_array($history)) {

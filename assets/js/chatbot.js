@@ -142,8 +142,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function sendToAI(userMessage) {
         phoenixConversationHistory.push({ role: 'user', content: userMessage });
 
-        // Limitar a los últimos 6 mensajes más el de system
-        const trimmedHistory = [phoenixConversationHistory[0], ...phoenixConversationHistory.slice(-6)];
+        const fullHistory = phoenixConversationHistory;
 
         appendMessage('Escribiendo...', 'bot');
 
@@ -152,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function () {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
                 action: 'phoenix_chatbot_message',
-                history: JSON.stringify(trimmedHistory)
+                history: JSON.stringify(fullHistory)
             })
         })
         .then(res => res.json())
