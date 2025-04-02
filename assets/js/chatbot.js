@@ -16,17 +16,13 @@ let botMessageTimes = [];
 let phoenixConversationHistory = [
     {
         role: 'system',
-        content: `Eres Valeria, Camila, Andrés, Renata o Esteban, el asistente virtual de Unreal Solutions. Tu trabajo es conversar de forma natural, profesional y útil con personas interesadas en servicios como desarrollo web, edición de video o marketing digital.
-
-- Evita repetir la frase "En Unreal Solutions..." en cada mensaje.
-- Organiza tus ideas con saltos de línea y listas verticales para que el texto sea fácil de leer.
-- Sé conversacional: usa oraciones cortas, no hables como folleto corporativo.
-- Si vas a hacer preguntas al usuario, sepáralas con viñetas o saltos de línea.
-- Menciona la marca o sugiere agendar reunión solo si tiene sentido.
-
-Tu objetivo es generar confianza, entender al cliente y ofrecer soluciones.`
+        content: `Eres Valeria, Camila, Andrés, Renata o Esteban, el asistente virtual de Unreal Solutions. Tu trabajo es conversar de forma natural, profesional y útil con personas interesadas en servicios como desarrollo web, edición de video o marketing digital.`
     }
 ];
+
+let currentFlow = null;
+let currentFlowStep = 0;
+let userData = {};
 
 document.addEventListener('DOMContentLoaded', function () {
     const input = document.getElementById('phoenix-user-input');
@@ -89,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 buttonRow.remove();
 
                 if (option === "Contratar servicio") {
-                    showFlowStep('collect_user_data');
+                    runSequentialFlow('collect_user_data');
                 } else {
                     sendToAI(option);
                 }
@@ -101,16 +97,28 @@ document.addEventListener('DOMContentLoaded', function () {
         messages.scrollTop = messages.scrollHeight;
     }
 
-    function showFlowStep(stepKey) {
-        const stepData = flow?.[stepKey];
-        if (!stepData || !Array.isArray(stepData)) return;
+    function runSequentialFlow(stepKey) {
+        currentFlow = flow?.[stepKey];
+        currentFlowStep = 0;
+        if (!currentFlow || !Array.isArray(currentFlow)) return;
 
-        stepData.forEach((text, index) => {
-            setTimeout(() => {
-                appendMessage(text, 'bot');
-                phoenixConversationHistory.push({ role: 'assistant', content: text });
-            }, index * 1200);
-        });
+        showNextFlowMessage();
+    }
+
+    function showNextFlowMessage() {
+        if (!currentFlow || currentFlowStep >= currentFlow.length) {
+            currentFlow = null;
+            currentFlowStep = 0;
+            return;
+        }
+
+        let message = currentFlow[currentFlowStep];
+        if (typeof message === 'string' && message.includes('{name}')) {
+            message = message.replace('{name}', userData.name || 'usuario');
+        }
+
+        appendMessage(message, 'bot');
+        phoenixConversationHistory.push({ role: 'assistant', content: message });
     }
 
     function sendToAI(userMessage) {
@@ -166,7 +174,22 @@ document.addEventListener('DOMContentLoaded', function () {
     sendBtn.addEventListener('click', function () {
         const userInput = input.value.trim();
         if (!userInput) return;
+
         appendMessage(userInput, 'user');
+        phoenixConversationHistory.push({ role: 'user', content: userInput });
+
+        // Guardar data del usuario por paso
+        if (currentFlow) {
+            if (currentFlowStep === 0) userData.name = userInput;
+            if (currentFlowStep === 1) userData.email = userInput;
+            if (currentFlowStep === 2) userData.phone = userInput;
+
+            currentFlowStep++;
+            setTimeout(showNextFlowMessage, 500);
+            input.value = '';
+            return;
+        }
+
         input.value = '';
         sendToAI(userInput);
     });
