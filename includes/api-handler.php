@@ -30,7 +30,7 @@ function phoenix_handle_chatbot_message() {
     $endpoint = 'https://api.openai.com/v1/chat/completions';
 
     $request_body = [
-        'model' => 'gpt-3.5-turbo',
+        'model' => 'gpt-4o', // <-- aquí cambiamos a GPT-4o
         'messages' => $history,
         'temperature' => 0.7,
         'max_tokens' => 500,
