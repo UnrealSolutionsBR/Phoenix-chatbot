@@ -9,33 +9,28 @@ add_action('wp_ajax_phoenix_chatbot_message', 'phoenix_handle_chatbot_message');
 add_action('wp_ajax_nopriv_phoenix_chatbot_message', 'phoenix_handle_chatbot_message');
 
 function phoenix_handle_chatbot_message() {
-    if (!isset($_POST['message'])) {
-        wp_send_json_error(['error' => 'No se recibió mensaje.']);
+    // Validar existencia del historial
+    if (!isset($_POST['history'])) {
+        wp_send_json_error(['error' => 'No se recibió historial de conversación.']);
     }
 
-    $user_message = sanitize_text_field($_POST['message']);
     $api_key = get_option('phoenix_openai_api_key');
 
     if (!$api_key) {
         wp_send_json_error(['error' => 'API Key no configurada.']);
     }
 
-    $prompt = "Eres el asistente virtual de Unreal Solutions, una agencia creativa especializada en desarrollo web, edición de video y marketing digital. 
-    Atiendes exclusivamente a clientes interesados en nuestros servicios: desarrollo de sitios web (especialmente en WordPress), producción audiovisual, estrategias de marketing (SEO, redes sociales, campañas pagadas).
-    Tu tono es cercano, profesional y parte del equipo, usando frases como 'En Unreal Solutions te ayudamos a...'.
-    
-    ⚠️ Si un usuario te pide información que no se relaciona con estos servicios (como programación general, recetas, guías técnicas o temas fuera del marketing digital), educadamente rechaza diciendo que estás enfocado en ayudar dentro del alcance de Unreal Solutions.
-    
-    Tu misión es entender al cliente y ofrecerle soluciones dentro de nuestras especialidades. Si es necesario, sugiere agendar una reunión con nuestro equipo. Sé claro, útil y evita sonar como un robot.";
+    $history = json_decode(stripslashes($_POST['history']), true);
+
+    if (empty($history) || !is_array($history)) {
+        wp_send_json_error(['error' => 'El historial no es válido.']);
+    }
 
     $endpoint = 'https://api.openai.com/v1/chat/completions';
 
     $request_body = [
         'model' => 'gpt-3.5-turbo',
-        'messages' => [
-            ['role' => 'system', 'content' => $prompt],
-            ['role' => 'user', 'content' => $user_message],
-        ],
+        'messages' => $history,
         'temperature' => 0.7,
         'max_tokens' => 500,
     ];

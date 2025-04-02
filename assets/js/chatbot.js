@@ -11,6 +11,17 @@ const phoenixAssistants = [
 const activeAssistant = phoenixAssistants[Math.floor(Math.random() * phoenixAssistants.length)];
 let botMessageTimes = [];
 
+let phoenixConversationHistory = [
+    {
+        role: 'system',
+        content: `Eres el asistente virtual de Unreal Solutions, una agencia creativa especializada en desarrollo web, edición de video y marketing digital. Atiendes exclusivamente a clientes interesados en nuestros servicios: desarrollo de sitios web (especialmente en WordPress), producción audiovisual, estrategias de marketing (SEO, redes sociales, campañas pagadas). Tu tono es cercano, profesional y parte del equipo, usando frases como 'En Unreal Solutions te ayudamos a...'.
+
+⚠️ Si un usuario te pide información que no se relaciona con estos servicios, educadamente rechaza diciendo que estás enfocado en ayudar dentro del alcance de Unreal Solutions.
+
+Tu misión es entender al cliente y ofrecerle soluciones dentro de nuestras especialidades. Si es necesario, sugiere agendar una reunión con nuestro equipo. Sé claro, útil y evita sonar como un robot.`
+    }
+];
+
 document.addEventListener('DOMContentLoaded', function () {
     const input = document.getElementById('phoenix-user-input');
     const sendBtn = document.getElementById('phoenix-send-btn');
@@ -128,8 +139,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Enviar texto al backend (ChatGPT)
     function sendToAI(userMessage) {
+        phoenixConversationHistory.push({ role: 'user', content: userMessage });
+
+        // Limitar a los últimos 6 mensajes más el de system
+        const trimmedHistory = [phoenixConversationHistory[0], ...phoenixConversationHistory.slice(-6)];
+
         appendMessage('Escribiendo...', 'bot');
 
         fetch(phoenixChatbotBaseUrlData.ajaxurl, {
@@ -137,17 +152,17 @@ document.addEventListener('DOMContentLoaded', function () {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
                 action: 'phoenix_chatbot_message',
-                message: userMessage
+                history: JSON.stringify(trimmedHistory)
             })
         })
         .then(res => res.json())
         .then(data => {
-            // Quitar el "Escribiendo..."
             const last = messages.querySelector('.phoenix-message.bot:last-child');
             if (last) last.remove();
 
             if (data.success) {
                 appendMessage(data.data.reply, 'bot');
+                phoenixConversationHistory.push({ role: 'assistant', content: data.data.reply });
             } else {
                 appendMessage("Lo siento, hubo un problema para obtener la respuesta 😕", 'bot');
             }
@@ -159,7 +174,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Loader inicial + saludo
     setTimeout(() => {
         loader.style.display = 'none';
         chatbot.style.display = 'flex';
@@ -169,7 +183,6 @@ document.addEventListener('DOMContentLoaded', function () {
         );
     }, 3000);
 
-    // Enviar mensaje del usuario
     sendBtn.addEventListener('click', function () {
         const userInput = input.value.trim();
         if (!userInput) return;
