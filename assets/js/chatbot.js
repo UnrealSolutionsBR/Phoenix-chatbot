@@ -109,6 +109,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function askNextFlowQuestion() {
         if (!currentFlow || currentFlowStep >= currentFlow.length) {
+            // Cambiar automáticamente al siguiente flujo si está definido
+            if (currentFlowKey === 'collect_user_data' && flow.lead_qualification) {
+                runDynamicFlow('lead_qualification');
+                return;
+            }
+
             currentFlow = null;
             currentFlowKey = null;
             currentFlowStep = 0;
@@ -140,6 +146,11 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(() => {
             appendMessage("Error de conexión con el servidor.", 'bot');
         });
+    }
+
+    function isValidEmail(email) {
+        const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return pattern.test(email);
     }
 
     function sendToAI(userMessage) {
@@ -198,11 +209,27 @@ document.addEventListener('DOMContentLoaded', function () {
         appendMessage(userInput, 'user');
         phoenixConversationHistory.push({ role: 'user', content: userInput });
 
-        // Si estamos en un flujo dinámico, guarda respuesta y continúa
+        // Validación y flujo guiado
         if (currentFlow) {
-            if (currentFlow[currentFlowStep] === "pedir_nombre") userData.name = userInput;
-            if (currentFlow[currentFlowStep] === "pedir_email") userData.email = userInput;
-            if (currentFlow[currentFlowStep] === "pedir_telefono") userData.phone = userInput;
+            const intent = currentFlow[currentFlowStep];
+
+            if (intent === 'pedir_nombre') {
+                userData.name = userInput;
+            }
+
+            if (intent === 'pedir_email') {
+                if (!isValidEmail(userInput)) {
+                    appendMessage("Parece que el correo no es válido. ¿Podrías verificarlo?", 'bot');
+                    phoenixConversationHistory.push({ role: 'assistant', content: "Parece que el correo no es válido. ¿Podrías verificarlo?" });
+                    input.value = '';
+                    return; // NO avanzar al siguiente paso
+                }
+                userData.email = userInput;
+            }
+
+            if (intent === 'pedir_telefono') {
+                userData.phone = userInput;
+            }
 
             currentFlowStep++;
             input.value = '';
