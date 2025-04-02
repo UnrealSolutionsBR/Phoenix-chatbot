@@ -26,9 +26,19 @@ function phoenix_enqueue_chatbot_assets() {
     wp_enqueue_style( 'phoenix-chatbot-style', PHOENIX_CHATBOT_URL . 'assets/css/chatbot.css', [], $css_version );
     wp_enqueue_script( 'phoenix-chatbot-script', PHOENIX_CHATBOT_URL . 'assets/js/chatbot.js', ['jquery'], $js_version, true );
 
+    // Cargar el archivo JSON
+    $greetings = [];
+    $json_path = plugin_dir_path(__FILE__) . 'includes/chatflow-config.json';
+    if (file_exists($json_path)) {
+        $chatflow = json_decode(file_get_contents($json_path), true);
+        $greetings = $chatflow['greeting'] ?? [];
+    }
+
+    // Pasar datos al JS
     wp_localize_script( 'phoenix-chatbot-script', 'phoenixChatbotBaseUrlData', [
         'baseUrl' => PHOENIX_CHATBOT_URL,
-        'ajaxurl' => admin_url('admin-ajax.php')
+        'ajaxurl' => admin_url('admin-ajax.php'),
+        'greetings' => $greetings
     ]);
 }
 
