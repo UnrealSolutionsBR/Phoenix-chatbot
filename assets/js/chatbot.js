@@ -12,7 +12,6 @@ const phoenixAssistants = [
 
 const activeAssistant = phoenixAssistants[Math.floor(Math.random() * phoenixAssistants.length)];
 let botMessageTimes = [];
-
 let currentFlowKey = null;
 let currentFlowStep = 0;
 let currentFlowKeys = [];
@@ -26,10 +25,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const loader = document.getElementById("phoenix-loader");
   const chatbot = document.querySelector(".phoenix-chatbot-container");
 
-  function appendMessage(text, sender, isTemporary = false) {
+  function appendMessage(text, sender) {
     const msgWrapper = document.createElement("div");
     msgWrapper.className = "phoenix-message " + sender;
-    if (isTemporary) msgWrapper.classList.add("typing");
 
     if (sender === "bot") {
       const avatar = document.createElement("img");
@@ -64,24 +62,50 @@ document.addEventListener("DOMContentLoaded", function () {
 
     messages.appendChild(msgWrapper);
     messages.scrollTop = messages.scrollHeight;
-
-    return msgWrapper;
   }
 
-  function simulateTypingAndRespond(callback, responseText) {
-    const loading = appendMessage("Escribiendo<span class='dot'>.</span><span class='dot'>.</span><span class='dot'>.</span>", "bot", true);
+  function appendTypingIndicator() {
+    removeTypingIndicator();
 
-    const delay = Math.min(3000 + responseText.length * 25, 8000);
+    const wrapper = document.createElement("div");
+    wrapper.className = "phoenix-message bot phoenix-typing-indicator";
 
-    setTimeout(() => {
-      loading.remove();
-      callback();
-    }, delay);
+    const avatar = document.createElement("img");
+    avatar.src = activeAssistant.avatar;
+    avatar.alt = activeAssistant.name;
+    avatar.className = "phoenix-bot-avatar";
+
+    const bubble = document.createElement("div");
+    bubble.className = "phoenix-message-content";
+
+    const meta = document.createElement("div");
+    meta.className = "phoenix-message-meta";
+    const timestamp = new Date();
+    meta.dataset.timestamp = timestamp.getTime();
+    meta.textContent = `${activeAssistant.name} • Escribiendo...`;
+    botMessageTimes.push({ meta, timestamp });
+
+    const dots = document.createElement("div");
+    dots.className = "phoenix-typing-text";
+
+    bubble.appendChild(meta);
+    bubble.appendChild(dots);
+    wrapper.appendChild(avatar);
+    wrapper.appendChild(bubble);
+    messages.appendChild(wrapper);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function removeTypingIndicator() {
+    const existing = messages.querySelector(".phoenix-typing-indicator");
+    if (existing) existing.remove();
   }
 
   function appendMessageWithOptions(text, options, onClickHandler) {
-    simulateTypingAndRespond(() => {
-      if (text) appendMessage(text, "bot");
+    appendTypingIndicator();
+    setTimeout(() => {
+      removeTypingIndicator();
+      appendMessage(text, "bot");
 
       const buttonRow = document.createElement("div");
       buttonRow.className = "phoenix-option-buttons";
@@ -100,7 +124,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       messages.appendChild(buttonRow);
       messages.scrollTop = messages.scrollHeight;
-    }, text + options.join(" "));
+    }, 1000);
   }
 
   function getGreetingByTime() {
@@ -111,11 +135,13 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return pattern.test(email);
   }
 
   function isValidPhone(phone) {
-    return /^[\d\s\+\-\(\)]{7,}$/.test(phone);
+    const pattern = /^[\d\s\+\-\(\)]{7,}$/;
+    return pattern.test(phone);
   }
 
   function runFlow(key) {
@@ -134,74 +160,39 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function runNextFlowStep() {
     const stepKey = currentFlowKeys[currentFlowStep];
-  
+
     if (!stepKey) {
-      // Determinar siguiente flujo
       if (currentFlowKey === "collect_user_data") return runFlow("lead_qualification");
       if (currentFlowKey === "lead_qualification") return runFlow("service_selection");
       if (currentFlowKey === "service_selection") return runFlow("web_development_branch");
       if (currentFlowKey === "web_development_branch") return runFlow("final_closure");
-  
+
       currentFlow = null;
       currentFlowKey = null;
       return;
     }
-  
-    const stepValue = currentFlow[stepKey];
-  
-    // Si es un array (como ask_name), tomar mensaje aleatorio
-    if (Array.isArray(stepValue)) {
-      const randomIndex = Math.floor(Math.random() * stepValue.length);
-      let message = stepValue[randomIndex];
-  
-      if (stepKey.includes("email") && userData.name) {
-        message = message.replace("{name}", userData.name);
-      }
-  
-      const typingBubble = document.createElement("div");
-typingBubble.className = "phoenix-message bot phoenix-typing-indicator";
 
-const avatar = document.createElement("img");
-avatar.src = activeAssistant.avatar;
-avatar.alt = activeAssistant.name;
-avatar.className = "phoenix-bot-avatar";
+    const intentArray = currentFlow[stepKey];
+    const randomIndex = Math.floor(Math.random() * intentArray.length);
+    let message = intentArray[randomIndex];
 
-const bubble = document.createElement("div");
-bubble.className = "phoenix-message-content";
-
-const meta = document.createElement("div");
-meta.className = "phoenix-message-meta";
-meta.textContent = `${activeAssistant.name} • Escribiendo`;
-
-const dots = document.createElement("span");
-dots.className = "phoenix-dots";
-dots.innerHTML = "<span>.</span><span>.</span><span>.</span>";
-
-bubble.appendChild(meta);
-bubble.appendChild(dots);
-typingBubble.appendChild(avatar);
-typingBubble.appendChild(bubble);
-messages.appendChild(typingBubble);
-messages.scrollTop = messages.scrollHeight;
-
-setTimeout(() => {
-  typingBubble.remove();
-  appendMessage(message, "bot");
-}, 500 + message.length * 20); // Tiempo ajustado al largo del mensaje
-
+    if (stepKey.includes("email") && userData.name) {
+      message = message.replace("{name}", userData.name);
     }
-  
-    // Si es un objeto tipo { question, options }
-    else if (stepKey === "question" && currentFlow.options) {
-      let message = stepValue;
-      if (userData.name) message = message.replace("{name}", userData.name);
-  
+
+    if (stepKey === "question" && currentFlow.options) {
       return appendMessageWithOptions(message, currentFlow.options, (option) => {
         appendMessage("Gracias por tu respuesta: " + option, "bot");
         currentFlowStep++;
         runNextFlowStep();
       });
     }
+
+    appendTypingIndicator();
+    setTimeout(() => {
+      removeTypingIndicator();
+      appendMessage(message, "bot");
+    }, message.length * 25);
   }
 
   function runNextFinalMessages() {
@@ -210,13 +201,15 @@ setTimeout(() => {
 
     const personalized = message.replace("{name}", userData.name || "usuario");
 
-    simulateTypingAndRespond(() => {
+    appendTypingIndicator();
+    setTimeout(() => {
+      removeTypingIndicator();
       appendMessage(personalized, "bot");
       currentFlowStep++;
       if (currentFlowStep < currentFlowKeys.length) {
         runNextFinalMessages();
       }
-    }, personalized);
+    }, personalized.length * 25);
   }
 
   function handleUserFlowInput(userInput) {
@@ -228,14 +221,16 @@ setTimeout(() => {
       runNextFlowStep();
     } else if (stepKey === "ask_email") {
       if (!isValidEmail(userInput)) {
-        return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
+        appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
+        return;
       }
       userData.email = userInput;
       currentFlowStep++;
       runNextFlowStep();
     } else if (stepKey === "ask_phone") {
       if (!isValidPhone(userInput)) {
-        return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
+        appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
+        return;
       }
       userData.phone = userInput;
       currentFlowStep++;
@@ -264,7 +259,7 @@ setTimeout(() => {
     loader.style.display = "none";
     chatbot.style.display = "flex";
 
-    const greeting = getGreetingByTime().replace(activeAssistant.name, activeAssistant.name);
+    const greeting = getGreetingByTime();
     const options = greetings.options;
 
     appendMessageWithOptions(greeting, options, (option) => {
