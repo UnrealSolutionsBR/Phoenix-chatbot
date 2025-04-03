@@ -134,36 +134,44 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function runNextFlowStep() {
     const stepKey = currentFlowKeys[currentFlowStep];
+  
     if (!stepKey) {
+      // Determinar siguiente flujo
       if (currentFlowKey === "collect_user_data") return runFlow("lead_qualification");
       if (currentFlowKey === "lead_qualification") return runFlow("service_selection");
       if (currentFlowKey === "service_selection") return runFlow("web_development_branch");
       if (currentFlowKey === "web_development_branch") return runFlow("final_closure");
-
+  
       currentFlow = null;
       currentFlowKey = null;
       return;
     }
-
-    const intentArray = currentFlow[stepKey];
-    const randomIndex = Math.floor(Math.random() * intentArray.length);
-    let message = intentArray[randomIndex];
-
-    if (stepKey.includes("email") && userData.name) {
-      message = message.replace("{name}", userData.name);
+  
+    const stepValue = currentFlow[stepKey];
+  
+    // Si es un array (como ask_name), tomar mensaje aleatorio
+    if (Array.isArray(stepValue)) {
+      const randomIndex = Math.floor(Math.random() * stepValue.length);
+      let message = stepValue[randomIndex];
+  
+      if (stepKey.includes("email") && userData.name) {
+        message = message.replace("{name}", userData.name);
+      }
+  
+      appendMessage(message, "bot");
     }
-
-    if (stepKey === "question" && currentFlow.options) {
+  
+    // Si es un objeto tipo { question, options }
+    else if (stepKey === "question" && currentFlow.options) {
+      let message = stepValue;
+      if (userData.name) message = message.replace("{name}", userData.name);
+  
       return appendMessageWithOptions(message, currentFlow.options, (option) => {
         appendMessage("Gracias por tu respuesta: " + option, "bot");
         currentFlowStep++;
         runNextFlowStep();
       });
     }
-
-    simulateTypingAndRespond(() => {
-      appendMessage(message, "bot");
-    }, message);
   }
 
   function runNextFinalMessages() {
