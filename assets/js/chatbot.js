@@ -188,12 +188,15 @@ document.addEventListener("DOMContentLoaded", function () {
     if (e.key === "Enter") sendBtn.click();
   });
 
+  // 🟡 MOSTRAR SALUDO + OPCIONES INICIALES
   setTimeout(() => {
     loader.style.display = "none";
     chatbot.style.display = "flex";
 
     const greeting = getGreetingByTime();
-    appendMessageWithOptions(greeting, greetings.options, (option) => {
+    const options = greetings.options;
+
+    appendMessageWithOptions(greeting, options, (option) => {
       if (option === "Contratar servicio") {
         runFlow("collect_user_data");
       } else {
@@ -201,4 +204,21 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   }, 1000);
+
+  // 🕒 Actualizar timestamps cada minuto
+  setInterval(() => {
+    botMessageTimes.forEach(({ meta, timestamp }) => {
+      meta.textContent = `${activeAssistant.name} • ${formatTimeElapsed(timestamp)}`;
+    });
+  }, 60000);
+
+  function formatTimeElapsed(timestamp) {
+    const now = new Date();
+    const diffMin = Math.floor((now - timestamp) / 60000);
+    if (diffMin < 60) return `Hace ${diffMin <= 0 ? '1 min' : diffMin + ' min'}`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `Hace ${diffHr === 1 ? '1 hora' : diffHr + ' horas'}`;
+    const diffDay = Math.floor(diffHr / 24);
+    return `Hace ${diffDay === 1 ? '1 día' : diffDay + ' días'}`;
+  }
 });
