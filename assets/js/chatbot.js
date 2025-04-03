@@ -158,7 +158,37 @@ document.addEventListener("DOMContentLoaded", function () {
         message = message.replace("{name}", userData.name);
       }
   
-      appendMessage(message, "bot");
+      const typingBubble = document.createElement("div");
+typingBubble.className = "phoenix-message bot phoenix-typing-indicator";
+
+const avatar = document.createElement("img");
+avatar.src = activeAssistant.avatar;
+avatar.alt = activeAssistant.name;
+avatar.className = "phoenix-bot-avatar";
+
+const bubble = document.createElement("div");
+bubble.className = "phoenix-message-content";
+
+const meta = document.createElement("div");
+meta.className = "phoenix-message-meta";
+meta.textContent = `${activeAssistant.name} • Escribiendo`;
+
+const dots = document.createElement("span");
+dots.className = "phoenix-dots";
+dots.innerHTML = "<span>.</span><span>.</span><span>.</span>";
+
+bubble.appendChild(meta);
+bubble.appendChild(dots);
+typingBubble.appendChild(avatar);
+typingBubble.appendChild(bubble);
+messages.appendChild(typingBubble);
+messages.scrollTop = messages.scrollHeight;
+
+setTimeout(() => {
+  typingBubble.remove();
+  appendMessage(message, "bot");
+}, 500 + message.length * 20); // Tiempo ajustado al largo del mensaje
+
     }
   
     // Si es un objeto tipo { question, options }
