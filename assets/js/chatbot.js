@@ -17,6 +17,7 @@ let currentFlowKey = null;
 let currentFlowStep = 0;
 let userData = {};
 let currentFlow = null;
+let currentFlowKeys = [];
 
 document.addEventListener("DOMContentLoaded", function () {
   const input = document.getElementById("phoenix-user-input");
@@ -109,46 +110,45 @@ document.addEventListener("DOMContentLoaded", function () {
     currentFlowStep = 0;
 
     if (typeof currentFlow === "object" && !Array.isArray(currentFlow)) {
-      appendMessageWithOptions(currentFlow.question, currentFlow.options, (option) => {
-        appendMessage("Gracias por tu respuesta: " + option, "bot");
-        currentFlowKey = null;
-        currentFlow = null;
-      });
-    } else {
+      currentFlowKeys = Object.keys(currentFlow);
       runNextFlowStep();
     }
   }
 
   function runNextFlowStep() {
-    const steps = ["ask_name", "ask_email", "ask_phone"];
-    const currentIntent = steps[currentFlowStep];
+    const stepKey = currentFlowKeys[currentFlowStep];
 
-    if (!currentIntent || !currentFlow[currentIntent]) {
+    if (!stepKey) {
+      // Si hay siguiente flujo, lánzalo
       if (currentFlowKey === "collect_user_data") {
         runFlow("lead_qualification");
-      } else {
-        currentFlow = null;
-        currentFlowKey = null;
+        return;
       }
+
+      currentFlow = null;
+      currentFlowKey = null;
       return;
     }
 
-    const phrases = currentFlow[currentIntent];
-    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-    const message = randomPhrase.replace("{name}", userData.name || "usuario");
+    const intentArray = currentFlow[stepKey];
+    const randomIndex = Math.floor(Math.random() * intentArray.length);
+    let message = intentArray[randomIndex];
+
+    if (stepKey === "ask_email" && userData.name) {
+      message = message.replace("{name}", userData.name);
+    }
 
     appendMessage(message, "bot");
   }
 
   function handleUserFlowInput(userInput) {
-    const steps = ["ask_name", "ask_email", "ask_phone"];
-    const currentIntent = steps[currentFlowStep];
+    const stepKey = currentFlowKeys[currentFlowStep];
 
-    if (currentIntent === "ask_name") {
+    if (stepKey === "ask_name") {
       userData.name = userInput;
       currentFlowStep++;
       runNextFlowStep();
-    } else if (currentIntent === "ask_email") {
+    } else if (stepKey === "ask_email") {
       if (!isValidEmail(userInput)) {
         appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
         return;
@@ -156,7 +156,7 @@ document.addEventListener("DOMContentLoaded", function () {
       userData.email = userInput;
       currentFlowStep++;
       runNextFlowStep();
-    } else if (currentIntent === "ask_phone") {
+    } else if (stepKey === "ask_phone") {
       if (!isValidPhone(userInput)) {
         appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
         return;
@@ -173,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     appendMessage(userInput, "user");
 
-    if (currentFlowKey === "collect_user_data" && currentFlow) {
+    if (currentFlow && currentFlowKey === "collect_user_data") {
       handleUserFlowInput(userInput);
     }
 
@@ -209,10 +209,10 @@ document.addEventListener("DOMContentLoaded", function () {
   function formatTimeElapsed(timestamp) {
     const now = new Date();
     const diffMin = Math.floor((now - timestamp) / 60000);
-    if (diffMin < 60) return `Hace ${diffMin <= 0 ? '1 min' : diffMin + ' min'}`;
+    if (diffMin < 60) return `Hace ${diffMin <= 0 ? "1 min" : diffMin + " min"}`;
     const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `Hace ${diffHr === 1 ? '1 hora' : diffHr + ' horas'}`;
+    if (diffHr < 24) return `Hace ${diffHr === 1 ? "1 hora" : diffHr + " horas"}`;
     const diffDay = Math.floor(diffHr / 24);
-    return `Hace ${diffDay === 1 ? '1 día' : diffDay + ' días'}`;
+    return `Hace ${diffDay === 1 ? "1 día" : diffDay + " días"}`;
   }
 });
