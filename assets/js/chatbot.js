@@ -211,7 +211,8 @@ document.addEventListener("DOMContentLoaded", function () {
     loader.style.display = "none";
     chatbot.style.display = "flex";
 
-    const greeting = getGreetingByTime();
+    const greetingTemplate = getGreetingByTime();
+    const greeting = greetingTemplate.replace("{name}", activeAssistant.name);
     const options = greetings.options;
 
     appendMessageWithOptions(greeting, options, (option) => {
