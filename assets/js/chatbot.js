@@ -108,21 +108,22 @@ document.addEventListener("DOMContentLoaded", function () {
     currentFlow = chatflow[key];
     currentFlowStep = 0;
 
-    if (Array.isArray(currentFlow)) {
-      runNextFlowStep();
-    } else if (typeof currentFlow === "object") {
+    if (typeof currentFlow === "object" && !Array.isArray(currentFlow)) {
       appendMessageWithOptions(currentFlow.question, currentFlow.options, (option) => {
         appendMessage("Gracias por tu respuesta: " + option, "bot");
         currentFlowKey = null;
         currentFlow = null;
       });
+    } else {
+      runNextFlowStep();
     }
   }
 
   function runNextFlowStep() {
-    const currentIntent = currentFlow[currentFlowStep];
+    const steps = ["ask_name", "ask_email", "ask_phone"];
+    const currentIntent = steps[currentFlowStep];
 
-    if (!currentIntent) {
+    if (!currentIntent || !currentFlow[currentIntent]) {
       if (currentFlowKey === "collect_user_data") {
         runFlow("lead_qualification");
       } else {
@@ -132,31 +133,22 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    let question = "";
+    const phrases = currentFlow[currentIntent];
+    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+    const message = randomPhrase.replace("{name}", userData.name || "usuario");
 
-    switch (currentIntent) {
-      case "pedir_nombre":
-        question = "¡Perfecto! Para brindarte una mejor atención, ¿me podrías decir tu nombre? 😊";
-        break;
-      case "pedir_email":
-        question = `¡Gracias, ${userData.name || "usuario"}! ¿Cuál es tu correo electrónico para enviarte una propuesta personalizada?`;
-        break;
-      case "pedir_telefono":
-        question = "Y por último, ¿me dejas tu número de teléfono? Solo lo usaré si necesitamos aclarar dudas o prefieres que te contacte por WhatsApp.";
-        break;
-    }
-
-    appendMessage(question, "bot");
+    appendMessage(message, "bot");
   }
 
   function handleUserFlowInput(userInput) {
-    const intent = currentFlow[currentFlowStep];
+    const steps = ["ask_name", "ask_email", "ask_phone"];
+    const currentIntent = steps[currentFlowStep];
 
-    if (intent === "pedir_nombre") {
+    if (currentIntent === "ask_name") {
       userData.name = userInput;
       currentFlowStep++;
       runNextFlowStep();
-    } else if (intent === "pedir_email") {
+    } else if (currentIntent === "ask_email") {
       if (!isValidEmail(userInput)) {
         appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
         return;
@@ -164,7 +156,7 @@ document.addEventListener("DOMContentLoaded", function () {
       userData.email = userInput;
       currentFlowStep++;
       runNextFlowStep();
-    } else if (intent === "pedir_telefono") {
+    } else if (currentIntent === "ask_phone") {
       if (!isValidPhone(userInput)) {
         appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
         return;
