@@ -1,124 +1,123 @@
 {
-    "greeting": {
-      "morning": "¡Hola, buen día! 😊 Soy Valeria, de Unreal Solutions. ¿En qué puedo ayudarte hoy?",
-      "afternoon": "¡Hola, buenas tardes! 😊 Soy Andrés, del equipo Unreal Solutions. ¿Cómo puedo ayudarte hoy?",
-      "night": "¡Hola, buenas noches! 😊 Soy Camila, de Unreal Solutions. ¿En qué puedo apoyarte en este momento?",
+  "greeting": {
+    "morning": "¡Hola, buen día! 😊 Soy Valeria, de Unreal Solutions. ¿En qué puedo ayudarte hoy?",
+    "afternoon": "¡Hola, buenas tardes! 😊 Soy Andrés, del equipo Unreal Solutions. ¿Cómo puedo ayudarte hoy?",
+    "night": "¡Hola, buenas noches! 😊 Soy Camila, de Unreal Solutions. ¿En qué puedo apoyarte en este momento?",
+    "options": [
+      "Contratar servicio",
+      "Asistencia",
+      "Otro"
+    ]
+  },
+  "collect_user_data": [
+    "pedir_nombre",
+    "pedir_email",
+    "pedir_telefono"
+  ],
+  "lead_qualification": {
+    "question": "¿En cuál de estas categorías encaja tu proyecto?",
+    "options": [
+      "Es un proyecto personal, soy persona natural.",
+      "Es un proyecto empresarial, trabajo en una empresa.",
+      "Soy proveedor y busco soluciones para un cliente."
+    ]
+  },
+  "service_selection": {
+    "question": "¿Qué tipo de servicio estás buscando?",
+    "options": [
+      "Desarrollo Web",
+      "Edición de Video",
+      "Marketing Digital",
+      "SEO"
+    ]
+  },
+  "web_development_branch": {
+    "motivation": {
+      "question": "¿Qué te motivó a querer tener un sitio web?",
       "options": [
-        "Contratar servicio",
-        "Asistencia",
+        "Quiero tener presencia en internet",
+        "Quiero vender mis productos o servicios",
+        "Quiero que mis clientes me encuentren más fácilmente",
+        "Me lo recomendaron / por tendencia",
+        "Otro motivo"
+      ],
+      "followup": [
+        "¡Estás en el lugar correcto! 💪 En Unreal Solutions somos expertos en el desarrollo de sitios web. Creamos páginas efectivas, atractivas y 100% funcionales.",
+        "Desarrollamos diferentes tipos de sitios según tus objetivos. Mira estas opciones para ayudarte a identificar cuál necesitas:",
+        {
+          "types": [
+            {
+              "name": "Tienda Online",
+              "description": "Un sitio diseñado para vender productos o servicios directamente desde la web. Incluye carrito de compras, pasarela de pago y gestión de inventario.",
+              "example": "Una tienda de ropa que muestra productos, permite elegir tallas y pagar en línea."
+            },
+            {
+              "name": "Landing Page",
+              "description": "Una sola página enfocada en una acción específica: vender un producto, captar leads o promocionar algo.",
+              "example": "Una campaña que ofrece un eBook gratis a cambio del correo del visitante."
+            },
+            {
+              "name": "Sitio Corporativo",
+              "description": "Un sitio completo que representa a una empresa. Secciones como 'Quiénes somos', 'Servicios', 'Clientes', 'Contacto', etc.",
+              "example": "Una agencia de arquitectura que muestra su historia, proyectos y equipo."
+            },
+            {
+              "name": "No estoy seguro",
+              "description": "El usuario no tiene claro qué necesita."
+            }
+          ]
+        }
+      ]
+    },
+    "objective": {
+      "question": "¿Cuál es el objetivo principal del sitio?",
+      "options": [
+        "Vender productos o servicios",
+        "Mostrar información sobre mi negocio",
+        "Generar contactos o leads",
         "Otro"
       ]
     },
-    "collect_user_data": [
-      "¡Perfecto! Para brindarte una mejor atención, ¿me podrías decir tu nombre? 😊",
-      "¡Gracias, {name}! ¿Cuál es tu correo electrónico para enviarte una propuesta personalizada?",
-      "Y por último, ¿me dejas tu número de teléfono? Solo lo usaré si necesitamos aclarar dudas o prefieres que te contacte por WhatsApp."
-    ],
-    "lead_qualification": {
-      "question": "¿En cuál de estas categorías encaja tu proyecto?",
+    "content_preparation": {
+      "question": "¿Ya tienes contenido preparado (como textos, imágenes o logo)?",
       "options": [
-        "Es un proyecto personal, soy persona natural.",
-        "Es un proyecto empresarial, trabajo en una empresa.",
-        "Soy proveedor y busco soluciones para un cliente."
+        "Tengo todo listo",
+        "Tengo algunas cosas, pero necesito ayuda",
+        "Necesito que me ayuden con todo desde cero"
       ]
     },
-    "service_selection": {
-      "question": "¿Qué tipo de servicio estás buscando?",
-      "options": [
-        "Desarrollo Web",
-        "Edición de Video",
-        "Marketing Digital",
-        "SEO"
-      ]
-    },
-    "web_development_branch": {
-      "motivation": {
-        "question": "¿Qué te motivó a querer tener un sitio web?",
+    "budget_estimation": {
+      "messages": [
+        "Basado en lo que me comentaste, te puedo dar una estimación inicial para este tipo de proyecto.",
+        "Por ejemplo, para un sitio {type}, el valor de inversión suele partir desde USD $X,XXX.",
+        "Recuerda que esto es solo una estimación, y podemos ofrecerte facilidades de pago sin intereses 💳"
+      ],
+      "evaluation": {
+        "question": "Comparando con otros presupuestos o lo que tenías en mente, ¿cómo lo evaluarías?",
         "options": [
-          "Quiero tener presencia en internet",
-          "Quiero vender mis productos o servicios",
-          "Quiero que mis clientes me encuentren más fácilmente",
-          "Me lo recomendaron / por tendencia",
-          "Otro motivo"
-        ],
-        "followup": [
-          "¡Estás en el lugar correcto! 💪 En Unreal Solutions somos expertos en el desarrollo de sitios web. Creamos páginas efectivas, atractivas y 100% funcionales.",
-          "Desarrollamos diferentes tipos de sitios según tus objetivos. Mira estas opciones para ayudarte a identificar cuál necesitas:",
-          {
-            "types": [
-              {
-                "name": "Tienda Online",
-                "description": "Un sitio diseñado para vender productos o servicios directamente desde la web. Incluye carrito de compras, pasarela de pago y gestión de inventario.",
-                "example": "Una tienda de ropa que muestra productos, permite elegir tallas y pagar en línea."
-              },
-              {
-                "name": "Landing Page",
-                "description": "Una sola página enfocada en una acción específica: vender un producto, captar leads o promocionar algo.",
-                "example": "Una campaña que ofrece un eBook gratis a cambio del correo del visitante."
-              },
-              {
-                "name": "Sitio Corporativo",
-                "description": "Un sitio completo que representa a una empresa. Secciones como 'Quiénes somos', 'Servicios', 'Clientes', 'Contacto', etc.",
-                "example": "Una agencia de arquitectura que muestra su historia, proyectos y equipo."
-              },
-              {
-                "name": "No estoy seguro",
-                "description": "El usuario no tiene claro qué necesita."
-              }
-            ]
-          }
-        ]
-      },
-      "objective": {
-        "question": "¿Cuál es el objetivo principal del sitio?",
-        "options": [
-          "Vender productos o servicios",
-          "Mostrar información sobre mi negocio",
-          "Generar contactos o leads",
-          "Otro"
-        ]
-      },
-      "content_preparation": {
-        "question": "¿Ya tienes contenido preparado (como textos, imágenes o logo)?",
-        "options": [
-          "Tengo todo listo",
-          "Tengo algunas cosas, pero necesito ayuda",
-          "Necesito que me ayuden con todo desde cero"
-        ]
-      },
-      "budget_estimation": {
-        "messages": [
-          "Basado en lo que me comentaste, te puedo dar una estimación inicial para este tipo de proyecto.",
-          "Por ejemplo, para un sitio {type}, el valor de inversión suele partir desde USD $X,XXX.",
-          "Recuerda que esto es solo una estimación, y podemos ofrecerte facilidades de pago sin intereses 💳"
-        ],
-        "evaluation": {
-          "question": "Comparando con otros presupuestos o lo que tenías en mente, ¿cómo lo evaluarías?",
-          "options": [
-            "Está dentro de lo esperado",
-            "No está tan lejos, pero tengo que hacer cuentas",
-            "Está por encima de lo esperado, pero podemos hablar",
-            "No puedo contratar con ese monto, está fuera de mi presupuesto"
-          ]
-        }
-      },
-      "timeline_followup": {
-        "trigger_response": "No está tan lejos, pero tengo que hacer cuentas",
-        "question": "¿En qué plazo crees que podrías iniciar el proyecto o tomar la decisión?",
-        "options": [
-          "Esta semana",
-          "En 1 o 2 semanas",
-          "A partir del próximo mes",
-          "Aún no lo sé, solo estoy explorando opciones"
+          "Está dentro de lo esperado",
+          "No está tan lejos, pero tengo que hacer cuentas",
+          "Está por encima de lo esperado, pero podemos hablar",
+          "No puedo contratar con ese monto, está fuera de mi presupuesto"
         ]
       }
     },
-    "final_closure": {
-      "messages": [
-        "¡Gracias por toda la información, {name}! 🙌 Nuestro equipo de ventas va a contactarte muy pronto para entender mejor tu pedido y enviarte un presupuesto detallado.",
-        "*[GIF: apretón de manos o saludo amistoso]*",
-        "Esperamos que este sea el primer paso de una excelente relación profesional. ¡Gracias por confiar en Unreal Solutions! 💙"
+    "timeline_followup": {
+      "trigger_response": "No está tan lejos, pero tengo que hacer cuentas",
+      "question": "¿En qué plazo crees que podrías iniciar el proyecto o tomar la decisión?",
+      "options": [
+        "Esta semana",
+        "En 1 o 2 semanas",
+        "A partir del próximo mes",
+        "Aún no lo sé, solo estoy explorando opciones"
       ]
     }
+  },
+  "final_closure": {
+    "messages": [
+      "¡Gracias por toda la información, {name}! 🙌 Nuestro equipo de ventas va a contactarte muy pronto para entender mejor tu pedido y enviarte un presupuesto detallado.",
+      "*[GIF: apretón de manos o saludo amistoso]*",
+      "Esperamos que este sea el primer paso de una excelente relación profesional. ¡Gracias por confiar en Unreal Solutions! 💙"
+    ]
   }
-  
+}
