@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Phoenix Chatbot AI
- * Description: Chatbot AI con múltiples asistentes, saludo dinámico, integración con ChatGPT y UI personalizada.
+ * Description: Chatbot AI basado en flujo JSON para interacción dinámica con múltiples asistentes.
  * Version: 1.0
  * Author: Unreal Solutions
  * Plugin URI: https://unrealsolutions.com.br/
@@ -11,34 +11,36 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 // Definir URL base del plugin
 define( 'PHOENIX_CHATBOT_URL', plugin_dir_url( __FILE__ ) );
+define( 'PHOENIX_CHATBOT_PATH', plugin_dir_path( __FILE__ ) );
 
 // Cargar fuente Open Sans desde Google Fonts
 add_action('wp_head', function () {
     echo "<link href='https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap' rel='stylesheet'>";
 });
 
-// Encolar estilos y scripts con control de versión por caché
+// Cargar JSON del flujo
+function phoenix_load_chatflow_json() {
+    $json_path = PHOENIX_CHATBOT_PATH . 'assets/js/chatflow-config.json';
+    if (file_exists($json_path)) {
+        $json_content = file_get_contents($json_path);
+        return json_decode($json_content, true);
+    }
+    return [];
+}
+
+// Encolar estilos y scripts
 add_action( 'wp_enqueue_scripts', 'phoenix_enqueue_chatbot_assets' );
 function phoenix_enqueue_chatbot_assets() {
-    $js_version  = filemtime( plugin_dir_path( __FILE__ ) . 'assets/js/chatbot.js' );
-    $css_version = filemtime( plugin_dir_path( __FILE__ ) . 'assets/css/chatbot.css' );
+    $js_version  = filemtime( PHOENIX_CHATBOT_PATH . 'assets/js/chatbot.js' );
+    $css_version = filemtime( PHOENIX_CHATBOT_PATH . 'assets/css/chatbot.css' );
+    $chatflow = phoenix_load_chatflow_json();
 
     wp_enqueue_style( 'phoenix-chatbot-style', PHOENIX_CHATBOT_URL . 'assets/css/chatbot.css', [], $css_version );
-    wp_enqueue_script( 'phoenix-chatbot-script', PHOENIX_CHATBOT_URL . 'assets/js/chatbot.js', ['jquery'], $js_version, true );
+    wp_enqueue_script( 'phoenix-chatbot-script', PHOENIX_CHATBOT_URL . 'assets/js/chatbot.js', [], $js_version, true );
 
-    // Cargar el archivo JSON completo
-    $chatflow = [];
-    $json_path = plugin_dir_path(__FILE__) . 'includes/chatflow-config.json';
-    if (file_exists($json_path)) {
-        $chatflow = json_decode(file_get_contents($json_path), true);
-    }
-
-    // Pasar datos al JS
     wp_localize_script( 'phoenix-chatbot-script', 'phoenixChatbotBaseUrlData', [
         'baseUrl' => PHOENIX_CHATBOT_URL,
-        'ajaxurl' => admin_url('admin-ajax.php'),
-        'greetings' => $chatflow['greeting'] ?? [],
-        'flow' => $chatflow
+        'flow'    => $chatflow
     ]);
 }
 
@@ -62,9 +64,6 @@ function phoenix_render_chatbot() {
         </div>
     </div>
 
-    <?php return ob_get_clean();
+    <?php
+    return ob_get_clean();
 }
-
-// Incluir archivos adicionales
-require_once plugin_dir_path(__FILE__) . 'includes/admin-settings.php';
-require_once plugin_dir_path(__FILE__) . 'includes/api-handler.php';

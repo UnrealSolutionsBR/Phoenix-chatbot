@@ -1,8 +1,8 @@
 {
   "greeting": {
-      "morning": "Hola, buen d\u00eda. Soy Valeria de Unreal Solutions. \u00bfEn qu\u00e9 puedo ayudarte hoy?",
-      "afternoon": "Hola, buenas tardes. Soy Andr\u00e9s del equipo de Unreal Solutions. \u00bfC\u00f3mo puedo ayudarte hoy?",
-      "night": "Hola, buenas noches. Soy Camila de Unreal Solutions. \u00bfEn qu\u00e9 puedo apoyarte en este momento?",
+      "morning": "Hola, buen d\u00eda. \u00bfEn qu\u00e9 puedo ayudarte hoy?",
+      "afternoon": "Hola, buenas tardes. \u00bfC\u00f3mo puedo ayudarte hoy?",
+      "night": "Hola, buenas noches. \u00bfEn qu\u00e9 puedo apoyarte en este momento?",
       "options": [
           "Contratar servicio",
           "Asistencia",
