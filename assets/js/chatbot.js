@@ -26,9 +26,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const loader = document.getElementById("phoenix-loader");
   const chatbot = document.querySelector(".phoenix-chatbot-container");
 
-  function appendMessage(text, sender) {
+  function appendMessage(text, sender, isTemporary = false) {
     const msgWrapper = document.createElement("div");
     msgWrapper.className = "phoenix-message " + sender;
+    if (isTemporary) msgWrapper.classList.add("typing");
 
     if (sender === "bot") {
       const avatar = document.createElement("img");
@@ -63,28 +64,43 @@ document.addEventListener("DOMContentLoaded", function () {
 
     messages.appendChild(msgWrapper);
     messages.scrollTop = messages.scrollHeight;
+
+    return msgWrapper;
+  }
+
+  function simulateTypingAndRespond(callback, responseText) {
+    const loading = appendMessage("Escribiendo<span class='dot'>.</span><span class='dot'>.</span><span class='dot'>.</span>", "bot", true);
+
+    const delay = Math.min(3000 + responseText.length * 25, 8000);
+
+    setTimeout(() => {
+      loading.remove();
+      callback();
+    }, delay);
   }
 
   function appendMessageWithOptions(text, options, onClickHandler) {
-    if (text) appendMessage(text, "bot");
+    simulateTypingAndRespond(() => {
+      if (text) appendMessage(text, "bot");
 
-    const buttonRow = document.createElement("div");
-    buttonRow.className = "phoenix-option-buttons";
+      const buttonRow = document.createElement("div");
+      buttonRow.className = "phoenix-option-buttons";
 
-    options.forEach((option) => {
-      const button = document.createElement("button");
-      button.className = "phoenix-option-button";
-      button.textContent = option;
-      button.onclick = function () {
-        appendMessage(option, "user");
-        buttonRow.remove();
-        onClickHandler(option);
-      };
-      buttonRow.appendChild(button);
-    });
+      options.forEach((option) => {
+        const button = document.createElement("button");
+        button.className = "phoenix-option-button";
+        button.textContent = option;
+        button.onclick = function () {
+          appendMessage(option, "user");
+          buttonRow.remove();
+          onClickHandler(option);
+        };
+        buttonRow.appendChild(button);
+      });
 
-    messages.appendChild(buttonRow);
-    messages.scrollTop = messages.scrollHeight;
+      messages.appendChild(buttonRow);
+      messages.scrollTop = messages.scrollHeight;
+    }, text + options.join(" "));
   }
 
   function getGreetingByTime() {
@@ -95,13 +111,11 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function isValidEmail(email) {
-    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return pattern.test(email);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
   function isValidPhone(phone) {
-    const pattern = /^[\d\s\+\-\(\)]{7,}$/;
-    return pattern.test(phone);
+    return /^[\d\s\+\-\(\)]{7,}$/.test(phone);
   }
 
   function runFlow(key) {
@@ -120,7 +134,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function runNextFlowStep() {
     const stepKey = currentFlowKeys[currentFlowStep];
-
     if (!stepKey) {
       if (currentFlowKey === "collect_user_data") return runFlow("lead_qualification");
       if (currentFlowKey === "lead_qualification") return runFlow("service_selection");
@@ -148,7 +161,9 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    appendMessage(message, "bot");
+    simulateTypingAndRespond(() => {
+      appendMessage(message, "bot");
+    }, message);
   }
 
   function runNextFinalMessages() {
@@ -156,12 +171,14 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!message) return;
 
     const personalized = message.replace("{name}", userData.name || "usuario");
-    appendMessage(personalized, "bot");
 
-    currentFlowStep++;
-    if (currentFlowStep < currentFlowKeys.length) {
-      setTimeout(runNextFinalMessages, 800);
-    }
+    simulateTypingAndRespond(() => {
+      appendMessage(personalized, "bot");
+      currentFlowStep++;
+      if (currentFlowStep < currentFlowKeys.length) {
+        runNextFinalMessages();
+      }
+    }, personalized);
   }
 
   function handleUserFlowInput(userInput) {
@@ -173,16 +190,14 @@ document.addEventListener("DOMContentLoaded", function () {
       runNextFlowStep();
     } else if (stepKey === "ask_email") {
       if (!isValidEmail(userInput)) {
-        appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
-        return;
+        return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
       }
       userData.email = userInput;
       currentFlowStep++;
       runNextFlowStep();
     } else if (stepKey === "ask_phone") {
       if (!isValidPhone(userInput)) {
-        appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
-        return;
+        return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
       }
       userData.phone = userInput;
       currentFlowStep++;
@@ -211,8 +226,7 @@ document.addEventListener("DOMContentLoaded", function () {
     loader.style.display = "none";
     chatbot.style.display = "flex";
 
-    const greetingTemplate = getGreetingByTime();
-    const greeting = greetingTemplate.replace("{name}", activeAssistant.name);
+    const greeting = getGreetingByTime().replace(activeAssistant.name, activeAssistant.name);
     const options = greetings.options;
 
     appendMessageWithOptions(greeting, options, (option) => {
