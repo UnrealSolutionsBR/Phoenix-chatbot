@@ -113,7 +113,6 @@ document.addEventListener("DOMContentLoaded", function () {
       currentFlowKeys = Object.keys(currentFlow);
       runNextFlowStep();
     } else if (Array.isArray(currentFlow)) {
-      // Mensajes simples
       currentFlowKeys = currentFlow;
       runNextFinalMessages();
     }
