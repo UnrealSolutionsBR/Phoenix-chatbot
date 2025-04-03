@@ -15,9 +15,9 @@ let botMessageTimes = [];
 
 let currentFlowKey = null;
 let currentFlowStep = 0;
+let currentFlowKeys = [];
 let userData = {};
 let currentFlow = null;
-let currentFlowKeys = [];
 
 document.addEventListener("DOMContentLoaded", function () {
   const input = document.getElementById("phoenix-user-input");
@@ -112,6 +112,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (typeof currentFlow === "object" && !Array.isArray(currentFlow)) {
       currentFlowKeys = Object.keys(currentFlow);
       runNextFlowStep();
+    } else if (Array.isArray(currentFlow)) {
+      // Mensajes simples
+      currentFlowKeys = currentFlow;
+      runNextFinalMessages();
     }
   }
 
@@ -119,11 +123,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const stepKey = currentFlowKeys[currentFlowStep];
 
     if (!stepKey) {
-      // Si hay siguiente flujo, lánzalo
-      if (currentFlowKey === "collect_user_data") {
-        runFlow("lead_qualification");
-        return;
-      }
+      if (currentFlowKey === "collect_user_data") return runFlow("lead_qualification");
+      if (currentFlowKey === "lead_qualification") return runFlow("service_selection");
+      if (currentFlowKey === "service_selection") return runFlow("web_development_branch");
+      if (currentFlowKey === "web_development_branch") return runFlow("final_closure");
 
       currentFlow = null;
       currentFlowKey = null;
@@ -134,11 +137,32 @@ document.addEventListener("DOMContentLoaded", function () {
     const randomIndex = Math.floor(Math.random() * intentArray.length);
     let message = intentArray[randomIndex];
 
-    if (stepKey === "ask_email" && userData.name) {
+    if (stepKey.includes("email") && userData.name) {
       message = message.replace("{name}", userData.name);
     }
 
+    if (stepKey === "question" && currentFlow.options) {
+      return appendMessageWithOptions(message, currentFlow.options, (option) => {
+        appendMessage("Gracias por tu respuesta: " + option, "bot");
+        currentFlowStep++;
+        runNextFlowStep();
+      });
+    }
+
     appendMessage(message, "bot");
+  }
+
+  function runNextFinalMessages() {
+    const message = currentFlowKeys[currentFlowStep];
+    if (!message) return;
+
+    const personalized = message.replace("{name}", userData.name || "usuario");
+    appendMessage(personalized, "bot");
+
+    currentFlowStep++;
+    if (currentFlowStep < currentFlowKeys.length) {
+      setTimeout(runNextFinalMessages, 800);
+    }
   }
 
   function handleUserFlowInput(userInput) {
@@ -173,7 +197,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     appendMessage(userInput, "user");
 
-    if (currentFlow && currentFlowKey === "collect_user_data") {
+    if (currentFlow && typeof currentFlow === "object") {
       handleUserFlowInput(userInput);
     }
 
