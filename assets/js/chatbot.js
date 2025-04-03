@@ -1,5 +1,6 @@
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
-const phoenixChatbotFlow = phoenixChatbotBaseUrlData.chatflow;
+const greetings = phoenixChatbotBaseUrlData.greetings;
+const flow = phoenixChatbotBaseUrlData.flow;
 
 const phoenixAssistants = [
     { name: "Valeria", avatar: phoenixChatbotBaseUrl + "assets/img/Valeria.png" },
@@ -14,6 +15,8 @@ let botMessageTimes = [];
 
 let currentFlow = null;
 let currentStep = 0;
+let userData = {};
+let conversationStarted = false;
 
 document.addEventListener('DOMContentLoaded', function () {
     const input = document.getElementById('phoenix-user-input');
@@ -44,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
             botMessageTimes.push({ meta, timestamp });
 
             const textNode = document.createElement('div');
-            textNode.textContent = text;
+            textNode.innerHTML = text.replace(/\n/g, "<br>");
 
             bubble.appendChild(meta);
             bubble.appendChild(textNode);
@@ -76,9 +79,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 buttonRow.remove();
 
                 if (option === "Contratar servicio") {
-                    runFlow('collect_user_data');
+                    startFlow("collect_user_data");
                 } else {
-                    appendMessage(`Gracias por elegir "${option}". ¿En qué más puedo ayudarte?`, 'bot');
+                    appendMessage("Gracias por tu respuesta. ¿En qué más puedo ayudarte?", 'bot');
                 }
             };
             buttonRow.appendChild(button);
@@ -88,71 +91,78 @@ document.addEventListener('DOMContentLoaded', function () {
         messages.scrollTop = messages.scrollHeight;
     }
 
-    function runFlow(flowKey) {
-        if (!phoenixChatbotFlow[flowKey]) return;
-        currentFlow = phoenixChatbotFlow[flowKey];
+    function getGreetingByTime() {
+        const hour = new Date().getHours();
+        if (hour >= 6 && hour < 12) return greetings.morning;
+        if (hour >= 12 && hour < 20) return greetings.afternoon;
+        return greetings.night;
+    }
+
+    function startFlow(flowKey) {
+        currentFlow = flow[flowKey];
         currentStep = 0;
+        conversationStarted = true;
         nextStep();
     }
 
     function nextStep() {
-        if (!currentFlow || currentStep >= currentFlow.length) {
-            currentFlow = null;
-            currentStep = 0;
-            return;
-        }
+        if (!currentFlow || currentStep >= currentFlow.length) return;
 
         const message = currentFlow[currentStep];
-        appendMessage(message, 'bot');
-        currentStep++;
+
+        const filledMessage = message.replace(/{name}/g, userData.name || "")
+                                     .replace(/{email}/g, userData.email || "")
+                                     .replace(/{phone}/g, userData.phone || "");
+
+        appendMessage(filledMessage, 'bot');
     }
 
-    function formatTimeElapsed(timestamp) {
-        const now = new Date();
-        const diffMs = now - timestamp;
-        const diffMin = Math.floor(diffMs / 60000);
-        const diffHr = Math.floor(diffMin / 60);
-        const diffDay = Math.floor(diffHr / 24);
-        const diffWeek = Math.floor(diffDay / 7);
-        const diffMonth = Math.floor(diffDay / 30);
-        const diffYear = Math.floor(diffDay / 365);
-
-        if (diffMin < 60) return `Hace ${diffMin <= 0 ? '1 min' : diffMin + ' min'}`;
-        if (diffHr < 24) return `Hace ${diffHr === 1 ? '1 hora' : diffHr + ' horas'}`;
-        if (diffDay < 7) return `Hace ${diffDay === 1 ? '1 día' : diffDay + ' días'}`;
-        if (diffWeek < 4) return `Hace ${diffWeek === 1 ? '1 semana' : diffWeek + ' semanas'}`;
-        if (diffMonth < 12) return `Hace ${diffMonth === 1 ? '1 mes' : diffMonth + ' meses'}`;
-        return `Hace ${diffYear === 1 ? '1 año' : diffYear + ' años'}`;
+    function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
-    function updateBotTimestamps() {
-        botMessageTimes.forEach(({ meta, timestamp }) => {
-            meta.textContent = `${activeAssistant.name} • ${formatTimeElapsed(timestamp)}`;
-        });
+    function isValidPhone(phone) {
+        return /^[\d\s\+\-\(\)]{7,}$/.test(phone);
     }
 
-    setTimeout(() => {
-        loader.style.display = 'none';
-        chatbot.style.display = 'block';
+    function handleFlowResponse(text) {
+        const currentQuestion = currentFlow[currentStep];
 
-        const greeting = phoenixChatbotFlow.greeting.morning;
-        const options = phoenixChatbotFlow.greeting.options;
+        if (currentQuestion.includes("{name}")) {
+            userData.name = text;
+            currentStep++;
+        } else if (currentQuestion.toLowerCase().includes("correo")) {
+            if (!isValidEmail(text)) {
+                appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", 'bot');
+                return;
+            }
+            userData.email = text;
+            currentStep++;
+        } else if (currentQuestion.toLowerCase().includes("teléfono")) {
+            if (!isValidPhone(text)) {
+                appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", 'bot');
+                return;
+            }
+            userData.phone = text;
+            currentStep++;
+        } else {
+            currentStep++;
+        }
 
-        appendMessageWithOptions(greeting, options);
-    }, 2000);
+        setTimeout(nextStep, 500);
+    }
 
     sendBtn.addEventListener('click', function () {
         const userInput = input.value.trim();
         if (!userInput) return;
+
         appendMessage(userInput, 'user');
         input.value = '';
 
-        if (currentFlow) {
-            setTimeout(nextStep, 600);
+        if (conversationStarted && currentFlow) {
+            handleFlowResponse(userInput);
         } else {
-            setTimeout(() => {
-                appendMessage('Gracias por tu mensaje. ¿En qué más puedo ayudarte?', 'bot');
-            }, 1000);
+            appendMessage("Gracias por tu mensaje. ¿En qué más puedo ayudarte?", 'bot');
         }
     });
 
@@ -160,5 +170,32 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.key === 'Enter') sendBtn.click();
     });
 
+    function updateBotTimestamps() {
+        botMessageTimes.forEach(({ meta, timestamp }) => {
+            meta.textContent = `${activeAssistant.name} • ${formatTimeElapsed(timestamp)}`;
+        });
+    }
+
+    function formatTimeElapsed(timestamp) {
+        const now = new Date();
+        const diffMin = Math.floor((now - timestamp) / 60000);
+        if (diffMin < 60) return `Hace ${diffMin <= 0 ? '1 min' : diffMin + ' min'}`;
+        const diffHr = Math.floor(diffMin / 60);
+        if (diffHr < 24) return `Hace ${diffHr === 1 ? '1 hora' : diffHr + ' horas'}`;
+        const diffDay = Math.floor(diffHr / 24);
+        return `Hace ${diffDay === 1 ? '1 día' : diffDay + ' días'}`;
+    }
+
     setInterval(updateBotTimestamps, 60000);
+
+    // Saludo inicial con opciones
+    setTimeout(() => {
+        loader.style.display = 'none';
+        chatbot.style.display = 'flex';
+
+        const greeting = getGreetingByTime();
+        const options = greetings.options;
+
+        appendMessageWithOptions(greeting, options);
+    }, 2000);
 });
