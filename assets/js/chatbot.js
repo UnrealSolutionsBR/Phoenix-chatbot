@@ -32,6 +32,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const loader = document.getElementById('phoenix-loader');
     const chatbot = document.querySelector('.phoenix-chatbot-container');
 
+    function getRandomMessage(array) {
+        return array[Math.floor(Math.random() * array.length)];
+    }
+
     function appendMessage(text, sender) {
         const msgWrapper = document.createElement('div');
         msgWrapper.className = 'phoenix-message ' + sender;
@@ -133,6 +137,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const currentIntent = currentFlow[currentFlowStep];
 
+        if (Array.isArray(flow[currentFlowKey][currentFlowStep])) {
+            const message = getRandomMessage(flow[currentFlowKey][currentFlowStep]);
+            appendMessage(message, 'bot');
+            phoenixConversationHistory.push({ role: 'assistant', content: message });
+            return;
+        }
+
         fetch(phoenixChatbotBaseUrlData.ajaxurl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -150,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 appendMessage(message, 'bot');
                 phoenixConversationHistory.push({ role: 'assistant', content: message });
             } else {
-                appendMessage("Hubo un problema generando la pregunta 😕", 'bot');
+                appendMessage("Hubo un problema generando la pregunta", 'bot');
             }
         })
         .catch(() => {
@@ -196,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 appendMessage(data.data.reply, 'bot');
                 phoenixConversationHistory.push({ role: 'assistant', content: data.data.reply });
             } else {
-                appendMessage("Lo siento, hubo un problema para obtener la respuesta 😕", 'bot');
+                appendMessage("Lo siento, hubo un problema para obtener la respuesta", 'bot');
             }
         })
         .catch(() => {
@@ -230,9 +241,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (intent === 'pedir_nombre') {
                 userData.name = userInput;
                 currentFlowStep++;
-            }
-
-            else if (intent === 'pedir_email') {
+            } else if (intent === 'pedir_email') {
                 if (!isValidEmail(userInput)) {
                     appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", 'bot');
                     phoenixConversationHistory.push({ role: 'assistant', content: "Ese correo no parece válido. ¿Podrías revisarlo?" });
@@ -241,9 +250,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 userData.email = userInput;
                 currentFlowStep++;
-            }
-
-            else if (intent === 'pedir_telefono') {
+            } else if (intent === 'pedir_telefono') {
                 if (!isValidPhone(userInput)) {
                     appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", 'bot');
                     phoenixConversationHistory.push({ role: 'assistant', content: "Ese número no parece válido. Intenta escribirlo nuevamente, por favor." });
