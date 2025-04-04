@@ -142,13 +142,28 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function runNextFlowStep() {
-    if (currentFlowKey === "collect_user_data") return runFlow("lead_qualification");
-    if (currentFlowKey === "lead_qualification") return runFlow("service_selection");
-    if (currentFlowKey === "service_selection") return runFlow("web_development_branch");
-    if (currentFlowKey === "web_development_branch") return runFlow("final_closure");
+    const stepKey = currentFlowKeys[currentFlowStep];
 
-    currentFlow = null;
-    currentFlowKey = null;
+    if (!stepKey) {
+      if (currentFlowKey === "collect_user_data") return runFlow("lead_qualification");
+      if (currentFlowKey === "lead_qualification") return runFlow("service_selection");
+      if (currentFlowKey === "service_selection") return runFlow("web_development_branch");
+      if (currentFlowKey === "web_development_branch") return runFlow("final_closure");
+      return;
+    }
+
+    const stepValue = currentFlow[stepKey];
+
+    if (Array.isArray(stepValue)) {
+      const randomIndex = Math.floor(Math.random() * stepValue.length);
+      let message = stepValue[randomIndex];
+      if (stepKey.includes("email") && userData.name) {
+        message = message.replace("{name}", userData.name);
+      }
+      simulateTypingAndRespond(() => {
+        appendMessage(message, "bot");
+      }, message);
+    }
   }
 
   function runNextFinalMessages() {
@@ -172,21 +187,21 @@ document.addEventListener("DOMContentLoaded", function () {
     if (stepKey === "ask_name") {
       userData.name = userInput;
       currentFlowStep++;
-      runFlow("lead_qualification");
+      runNextFlowStep();
     } else if (stepKey === "ask_email") {
       if (!isValidEmail(userInput)) {
         return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
       }
       userData.email = userInput;
       currentFlowStep++;
-      runFlow("lead_qualification");
+      runNextFlowStep();
     } else if (stepKey === "ask_phone") {
       if (!isValidPhone(userInput)) {
         return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
       }
       userData.phone = userInput;
       currentFlowStep++;
-      runFlow("lead_qualification");
+      runNextFlowStep();
     }
   }
 
