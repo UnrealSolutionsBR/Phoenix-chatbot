@@ -204,10 +204,14 @@
   ========================= */
   .phoenix-typing-text {
     display: inline-block;
-    font-style: italic;
-    color: #444;
+    font-style: normal;
+    color: #000;
     font-size: 15px;
-  }
+    line-height: 1.4;
+    min-width: calc(12ch + 10px);
+    text-align: left;
+    white-space: nowrap;
+}
   
   .phoenix-typing-text::after {
     content: "Escribiendo.";
