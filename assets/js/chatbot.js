@@ -69,7 +69,26 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function simulateTypingAndRespond(callback, responseText) {
-    const loading = appendMessage("Escribiendo<span class='dot'>.</span><span class='dot'>.</span><span class='dot'>.</span>", "bot", true);
+    const loading = document.createElement("div");
+loading.className = "phoenix-message bot typing";
+
+const avatar = document.createElement("img");
+avatar.src = activeAssistant.avatar;
+avatar.alt = activeAssistant.name;
+avatar.className = "phoenix-bot-avatar";
+
+const bubble = document.createElement("div");
+bubble.className = "phoenix-message-content phoenix-typing-indicator";
+
+const typingText = document.createElement("div");
+typingText.className = "phoenix-typing-text";
+
+bubble.appendChild(typingText);
+loading.appendChild(avatar);
+loading.appendChild(bubble);
+messages.appendChild(loading);
+messages.scrollTop = messages.scrollHeight;
+
 
     const delay = Math.min(3000 + responseText.length * 25, 8000);
 
