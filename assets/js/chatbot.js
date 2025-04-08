@@ -146,7 +146,6 @@ messages.scrollTop = messages.scrollHeight;
       if ('question' in currentFlow && 'options' in currentFlow) {
         simulateTypingAndRespond(() => {
           appendMessageWithOptions(currentFlow.question, currentFlow.options, (option) => {
-            appendMessage("Gracias por tu respuesta: " + option, "bot");
             runNextFlowStep();
           });
         }, currentFlow.question);
