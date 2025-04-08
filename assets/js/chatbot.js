@@ -1,4 +1,4 @@
-// chatbot.js actualizado
+// chatbot.js actualizado con flujo completo según nuevo orden
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const chatflow = phoenixChatbotBaseUrlData.flow;
 const greetings = chatflow.greeting;
@@ -161,19 +161,26 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function runNextFlow() {
-    if (currentFlowKey === "collect_user_data") return runFlow("lead_qualification");
-    if (currentFlowKey === "lead_qualification") return runFlow("service_selection");
-    if (currentFlowKey === "service_selection") return runFlow("web_development_branch");
-    if (currentFlowKey === "web_development_branch") return runFlow("final_closure");
+    const order = [
+      "collect_user_data",
+      "lead_qualification",
+      "service_selection",
+      "web_development_branch",
+      "types",
+      "objective",
+      "content_preparation",
+      "budget_estimation",
+      "evaluation",
+      "timeline_followup",
+      "final_closure"
+    ];
+    const nextIndex = order.indexOf(currentFlowKey) + 1;
+    if (nextIndex < order.length) runFlow(order[nextIndex]);
   }
 
   function runNextFlowStep() {
     const stepKey = currentFlowKeys[currentFlowStep];
-
-    if (!stepKey) {
-      runNextFlow();
-      return;
-    }
+    if (!stepKey) return runNextFlow();
 
     const stepValue = currentFlow[stepKey];
 
@@ -186,6 +193,24 @@ document.addEventListener("DOMContentLoaded", function () {
       simulateTypingAndRespond(() => {
         appendMessage(message, "bot");
       }, message);
+    } else if (typeof stepValue === "object" && 'question' in stepValue && 'options' in stepValue) {
+      simulateTypingAndRespond(() => {
+        appendMessageWithOptions(stepValue.question, stepValue.options, (option) => {
+          userData[stepKey] = option;
+          if (stepValue.followup) {
+            stepValue.followup.forEach((followup) => {
+              if (typeof followup === 'string') {
+                simulateTypingAndRespond(() => appendMessage(followup, "bot"), followup);
+              } else if (followup.types) {
+                const cards = followup.types.map(type => `<b>${type.name}</b>: ${type.description}${type.example ? `<br><i>${type.example}</i>` : ''}`).join("<br><br>");
+                simulateTypingAndRespond(() => appendMessage(cards, "bot"), cards);
+              }
+            });
+          }
+          currentFlowStep++;
+          runNextFlowStep();
+        });
+      }, stepValue.question);
     }
   }
 
