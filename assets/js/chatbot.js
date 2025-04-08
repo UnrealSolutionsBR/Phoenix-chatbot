@@ -1,4 +1,4 @@
-// chatbot.js actualizado con fix para avanzar tras content_preparation
+// chatbot.js con corrección para que collect_user_data espere input y avance correctamente hasta budget_estimation
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const chatflow = phoenixChatbotBaseUrlData.flow;
 const greetings = chatflow.greeting;
@@ -143,17 +143,8 @@ document.addEventListener("DOMContentLoaded", function () {
     currentFlowStep = 0;
 
     if (typeof currentFlow === "object" && !Array.isArray(currentFlow)) {
-      if ('question' in currentFlow && 'options' in currentFlow) {
-        simulateTypingAndRespond(() => {
-          appendMessageWithOptions(currentFlow.question, currentFlow.options, (option) => {
-            userData[currentFlowKey] = option;
-            runNextFlow();
-          });
-        }, currentFlow.question);
-      } else {
-        currentFlowKeys = Object.keys(currentFlow);
-        runNextFlowStep();
-      }
+      currentFlowKeys = Object.keys(currentFlow);
+      runNextFlowStep();
     } else if (Array.isArray(currentFlow)) {
       currentFlowKeys = currentFlow;
       runNextFinalMessages();
@@ -192,23 +183,11 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       simulateTypingAndRespond(() => {
         appendMessage(message, "bot");
-        currentFlowStep++;
-        runNextFlowStep();
       }, message);
     } else if (typeof stepValue === "object" && 'question' in stepValue && 'options' in stepValue) {
       simulateTypingAndRespond(() => {
         appendMessageWithOptions(stepValue.question, stepValue.options, (option) => {
           userData[stepKey] = option;
-          if (stepValue.followup) {
-            stepValue.followup.forEach((followup) => {
-              if (typeof followup === 'string') {
-                simulateTypingAndRespond(() => appendMessage(followup, "bot"), followup);
-              } else if (followup.types) {
-                const cards = followup.types.map(type => `<b>${type.name}</b>: ${type.description}${type.example ? `<br><i>${type.example}</i>` : ''}`).join("<br><br>");
-                simulateTypingAndRespond(() => appendMessage(cards, "bot"), cards);
-              }
-            });
-          }
           currentFlowStep++;
           runNextFlowStep();
         });
@@ -227,6 +206,8 @@ document.addEventListener("DOMContentLoaded", function () {
       currentFlowStep++;
       if (currentFlowStep < currentFlowKeys.length) {
         runNextFinalMessages();
+      } else {
+        runNextFlow();
       }
     }, personalized);
   }
