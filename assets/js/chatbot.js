@@ -1,4 +1,4 @@
-// chatbot.js con corrección para que collect_user_data espere input y avance correctamente hasta budget_estimation
+// chatbot.js actualizado para manejar stepkeys, options, messages y types según flujo completo
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const chatflow = phoenixChatbotBaseUrlData.flow;
 const greetings = chatflow.greeting;
@@ -143,8 +143,13 @@ document.addEventListener("DOMContentLoaded", function () {
     currentFlowStep = 0;
 
     if (typeof currentFlow === "object" && !Array.isArray(currentFlow)) {
-      currentFlowKeys = Object.keys(currentFlow);
-      runNextFlowStep();
+      if ('messages' in currentFlow) {
+        currentFlowKeys = currentFlow.messages;
+        runNextFinalMessages();
+      } else {
+        currentFlowKeys = Object.keys(currentFlow);
+        runNextFlowStep();
+      }
     } else if (Array.isArray(currentFlow)) {
       currentFlowKeys = currentFlow;
       runNextFinalMessages();
@@ -184,31 +189,44 @@ document.addEventListener("DOMContentLoaded", function () {
       simulateTypingAndRespond(() => {
         appendMessage(message, "bot");
       }, message);
-    } else if (typeof stepValue === "object" && 'question' in stepValue && 'options' in stepValue) {
+    } else if (typeof stepValue === "object") {
+      if ('question' in stepValue && 'options' in stepValue) {
+        simulateTypingAndRespond(() => {
+          appendMessageWithOptions(stepValue.question, stepValue.options, (option) => {
+            userData[stepKey] = option;
+            if (stepValue.followup) {
+              stepValue.followup.forEach((followup) => {
+                if (typeof followup === 'string') {
+                  simulateTypingAndRespond(() => appendMessage(followup, "bot"), followup);
+                } else if (followup.types) {
+                  followup.types.forEach((type) => {
+                    const msg = `<b>${type.name}</b>: ${type.description}${type.example ? `<br><i>${type.example}</i>` : ''}`;
+                    simulateTypingAndRespond(() => appendMessage(msg, "bot"), msg);
+                  });
+                }
+              });
+            }
+            currentFlowStep++;
+            runNextFlowStep();
+          });
+        }, stepValue.question);
+      }
+    } else {
       simulateTypingAndRespond(() => {
-        appendMessageWithOptions(stepValue.question, stepValue.options, (option) => {
-          userData[stepKey] = option;
-          currentFlowStep++;
-          runNextFlowStep();
-        });
-      }, stepValue.question);
+        appendMessage(stepValue, "bot");
+      }, stepValue);
     }
   }
 
   function runNextFinalMessages() {
     const message = currentFlowKeys[currentFlowStep];
-    if (!message) return;
+    if (!message) return runNextFlow();
 
     const personalized = message.replace("{name}", userData.name || "usuario");
-
     simulateTypingAndRespond(() => {
       appendMessage(personalized, "bot");
       currentFlowStep++;
-      if (currentFlowStep < currentFlowKeys.length) {
-        runNextFinalMessages();
-      } else {
-        runNextFlow();
-      }
+      runNextFinalMessages();
     }, personalized);
   }
 
