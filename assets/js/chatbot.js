@@ -1,4 +1,4 @@
-// chatbot.js actualizado con flujo completo según nuevo orden
+// chatbot.js actualizado con fix para avanzar tras content_preparation
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const chatflow = phoenixChatbotBaseUrlData.flow;
 const greetings = chatflow.greeting;
@@ -192,6 +192,8 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       simulateTypingAndRespond(() => {
         appendMessage(message, "bot");
+        currentFlowStep++;
+        runNextFlowStep();
       }, message);
     } else if (typeof stepValue === "object" && 'question' in stepValue && 'options' in stepValue) {
       simulateTypingAndRespond(() => {
