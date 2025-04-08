@@ -208,7 +208,7 @@
     color: #000;
     font-size: 15px;
     line-height: 1.4;
-    min-width: calc(12ch + 10px);
+    min-width: 11ch;
     text-align: left;
     white-space: nowrap;
 }

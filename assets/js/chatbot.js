@@ -1,3 +1,4 @@
+// chatbot.js actualizado
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const chatflow = phoenixChatbotBaseUrlData.flow;
 const greetings = chatflow.greeting;
@@ -70,25 +71,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function simulateTypingAndRespond(callback, responseText) {
     const loading = document.createElement("div");
-loading.className = "phoenix-message bot typing";
+    loading.className = "phoenix-message bot typing";
 
-const avatar = document.createElement("img");
-avatar.src = activeAssistant.avatar;
-avatar.alt = activeAssistant.name;
-avatar.className = "phoenix-bot-avatar";
+    const avatar = document.createElement("img");
+    avatar.src = activeAssistant.avatar;
+    avatar.alt = activeAssistant.name;
+    avatar.className = "phoenix-bot-avatar";
 
-const bubble = document.createElement("div");
-bubble.className = "phoenix-message-content phoenix-typing-indicator";
+    const bubble = document.createElement("div");
+    bubble.className = "phoenix-message-content phoenix-typing-indicator";
 
-const typingText = document.createElement("div");
-typingText.className = "phoenix-typing-text";
+    const typingText = document.createElement("div");
+    typingText.className = "phoenix-typing-text";
 
-bubble.appendChild(typingText);
-loading.appendChild(avatar);
-loading.appendChild(bubble);
-messages.appendChild(loading);
-messages.scrollTop = messages.scrollHeight;
-
+    bubble.appendChild(typingText);
+    loading.appendChild(avatar);
+    loading.appendChild(bubble);
+    messages.appendChild(loading);
+    messages.scrollTop = messages.scrollHeight;
 
     const delay = Math.min(3000 + responseText.length * 25, 8000);
 
@@ -146,7 +146,8 @@ messages.scrollTop = messages.scrollHeight;
       if ('question' in currentFlow && 'options' in currentFlow) {
         simulateTypingAndRespond(() => {
           appendMessageWithOptions(currentFlow.question, currentFlow.options, (option) => {
-            runNextFlowStep();
+            userData[currentFlowKey] = option;
+            runNextFlow();
           });
         }, currentFlow.question);
       } else {
@@ -159,14 +160,18 @@ messages.scrollTop = messages.scrollHeight;
     }
   }
 
+  function runNextFlow() {
+    if (currentFlowKey === "collect_user_data") return runFlow("lead_qualification");
+    if (currentFlowKey === "lead_qualification") return runFlow("service_selection");
+    if (currentFlowKey === "service_selection") return runFlow("web_development_branch");
+    if (currentFlowKey === "web_development_branch") return runFlow("final_closure");
+  }
+
   function runNextFlowStep() {
     const stepKey = currentFlowKeys[currentFlowStep];
 
     if (!stepKey) {
-      if (currentFlowKey === "collect_user_data") return runFlow("lead_qualification");
-      if (currentFlowKey === "lead_qualification") return runFlow("service_selection");
-      if (currentFlowKey === "service_selection") return runFlow("web_development_branch");
-      if (currentFlowKey === "web_development_branch") return runFlow("final_closure");
+      runNextFlow();
       return;
     }
 
@@ -244,7 +249,7 @@ messages.scrollTop = messages.scrollHeight;
     loader.style.display = "none";
     chatbot.style.display = "flex";
 
-    const greeting = getGreetingByTime().replace(activeAssistant.name, activeAssistant.name);
+    const greeting = getGreetingByTime();
     const options = greetings.options;
 
     appendMessageWithOptions(greeting, options, (option) => {
