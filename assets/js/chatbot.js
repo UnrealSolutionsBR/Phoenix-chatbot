@@ -1,4 +1,4 @@
-// chatbot.js corregido para elegir solo un mensaje aleatorio por step y esperar input del usuario
+// chatbot.js completo con control de avance por step.next y logs de debug
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const flow = phoenixChatbotBaseUrlData.flow.conversation;
 
@@ -23,6 +23,31 @@ function getNodeById(id) {
 
 function replaceVariables(text) {
   return text.replace(/\{(\w+)\}/g, (_, key) => userData[key] || `{${key}}`);
+}
+
+function appendMessageWithOptions(text, options, onClickHandler) {
+  simulateTypingAndRespond(() => {
+    if (text) appendMessage(text, "bot");
+
+    const messages = document.getElementById("phoenix-chat-messages");
+    const buttonRow = document.createElement("div");
+    buttonRow.className = "phoenix-option-buttons";
+
+    options.forEach((option) => {
+      const button = document.createElement("button");
+      button.className = "phoenix-option-button";
+      button.textContent = option;
+      button.onclick = function () {
+        appendMessage(option, "user");
+        buttonRow.remove();
+        onClickHandler(option);
+      };
+      buttonRow.appendChild(button);
+    });
+
+    messages.appendChild(buttonRow);
+    messages.scrollTop = messages.scrollHeight;
+  }, text + options.join(" "));
 }
 
 function appendMessage(text, sender, isTemporary = false) {
@@ -95,65 +120,47 @@ function simulateTypingAndRespond(callback, responseText) {
   }, delay);
 }
 
-function appendMessageWithOptions(text, options, onClickHandler) {
-  simulateTypingAndRespond(() => {
-    if (text) appendMessage(text, "bot");
-
-    const messages = document.getElementById("phoenix-chat-messages");
-    const buttonRow = document.createElement("div");
-    buttonRow.className = "phoenix-option-buttons";
-
-    options.forEach((option) => {
-      const button = document.createElement("button");
-      button.className = "phoenix-option-button";
-      button.textContent = option;
-      button.onclick = function () {
-        appendMessage(option, "user");
-        buttonRow.remove();
-        onClickHandler(option);
-      };
-      buttonRow.appendChild(button);
-    });
-
-    messages.appendChild(buttonRow);
-    messages.scrollTop = messages.scrollHeight;
-  }, text + options.join(" "));
-}
-
 function runStep() {
   const step = currentSteps[currentStepIndex];
-  if (!step) {
-    // Si no hay más pasos, avanzar al siguiente nodo
-    if (currentNode.next) return nextNode(currentNode.next);
-    return;
-  }
+  console.log("Ejecutando runStep para", step?.id);
+  if (!step) return;
+
+  const goToNext = () => {
+    console.log("→ goToNext llamado desde runStep. step.next:", step.next);
+    if (step.next) {
+      const nextStepIndex = currentSteps.findIndex(s => s.id === step.next);
+      if (nextStepIndex !== -1) {
+        console.log("→ Avanzando internamente a step:", step.next);
+        currentStepIndex = nextStepIndex;
+        runStep();
+        return;
+      } else {
+        console.log("→ Redirigiendo a nodo externo:", step.next);
+        return nextNode(step.next);
+      }
+    }
+    currentStepIndex++;
+    if (currentStepIndex < currentSteps.length) {
+      runStep();
+    } else if (currentNode.next) {
+      nextNode(currentNode.next);
+    }
+  };
 
   if (step.messages) {
     const randomMessage = step.messages[Math.floor(Math.random() * step.messages.length)];
     const message = replaceVariables(randomMessage);
+    console.log("Mostrando mensaje de step", step.id, ":", message);
     simulateTypingAndRespond(() => {
       appendMessage(message, "bot");
+      if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) {
+        goToNext();
+      }
     }, message);
   } else if (step.question && step.options) {
     appendMessageWithOptions(step.question, step.options, (option) => {
       userData[step.id] = option;
-      if (step.followup) {
-        runMessages(step.followup.map(replaceVariables), () => {
-          currentStepIndex++;
-          runStep();
-        });
-      } else if (step.types) {
-        const typeMsgs = step.types.map(type =>
-          `<b>${type.name}</b>: ${type.description}${type.example ? `<br><i>${type.example}</i>` : ''}`
-        );
-        runMessages(typeMsgs, () => {
-          currentStepIndex++;
-          runStep();
-        });
-      } else {
-        currentStepIndex++;
-        runStep();
-      }
+      goToNext();
     });
   }
 }
@@ -168,16 +175,16 @@ function runMessages(messages, callback, index = 0) {
 }
 
 function nextNode(id) {
+  console.log("nextNode:", id);
   currentNode = getNodeById(id);
-  if (!currentNode) return;
+  if (!currentNode) return console.error("❌ Nodo no encontrado:", id);
 
   if (currentNode.steps) {
     currentSteps = currentNode.steps;
     currentStepIndex = 0;
     runStep();
   } else if (currentNode.messages) {
-    const messages = currentNode.messages;
-    runMessages(messages.map(replaceVariables), () => {
+    runMessages(currentNode.messages.map(replaceVariables), () => {
       if (currentNode.next) nextNode(currentNode.next);
     });
   } else if (currentNode.question && currentNode.options) {
@@ -192,33 +199,53 @@ function nextNode(id) {
   }
 }
 
-function startChat() {
-  const hour = new Date().getHours();
-  let greetingKey = 'night';
-  if (hour >= 6 && hour < 12) greetingKey = 'morning';
-  else if (hour >= 12 && hour < 20) greetingKey = 'afternoon';
+function handleFreeTextInput(userInput) {
+  if (!currentNode || !currentNode.steps) return;
+  const step = currentSteps[currentStepIndex];
+  if (!step) return;
 
-  const greetingNode = getNodeById('greeting');
-  const greetingText = greetingNode.messages[greetingKey];
-  const options = greetingNode.options;
+  console.log("Usuario escribió:", userInput);
+  console.log("Validando input para step:", step.id);
 
-  appendMessageWithOptions(greetingText, options, (option) => {
-    if (option === "Contratar servicio") {
-      nextNode(greetingNode.next);
-    } else {
-      appendMessage("Por favor, selecciona una opción relacionada con nuestros servicios.", "bot");
+  const goToNext = () => {
+    console.log("→ goToNext llamado desde input para", step.id);
+    if (step.next) {
+      const nextStepIndex = currentSteps.findIndex(s => s.id === step.next);
+      if (nextStepIndex !== -1) {
+        console.log("→ Avanzando internamente a step:", step.next);
+        currentStepIndex = nextStepIndex;
+        runStep();
+        return;
+      } else {
+        console.log("→ Redirigiendo a nodo externo:", step.next);
+        return nextNode(step.next);
+      }
     }
-  });
-}
+    currentStepIndex++;
+    if (currentStepIndex < currentSteps.length) {
+      runStep();
+    } else if (currentNode.next) {
+      nextNode(currentNode.next);
+    }
+  };
 
-function formatTimeElapsed(timestamp) {
-  const now = new Date();
-  const diffMin = Math.floor((now - timestamp) / 60000);
-  if (diffMin < 60) return `Hace ${diffMin <= 0 ? "1 min" : diffMin + " min"}`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `Hace ${diffHr === 1 ? "1 hora" : diffHr + " horas"}`;
-  const diffDay = Math.floor(diffHr / 24);
-  return `Hace ${diffDay === 1 ? "1 día" : diffDay + " días"}`;
+  const id = step.id;
+  if (id === "ask_name") {
+    userData.name = userInput;
+    goToNext();
+  } else if (id === "ask_email") {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInput)) {
+      return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
+    }
+    userData.email = userInput;
+    goToNext();
+  } else if (id === "ask_phone") {
+    if (!/^[\d\s\+\-\(\)]{7,}$/.test(userInput)) {
+      return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
+    }
+    userData.phone = userInput;
+    goToNext();
+  }
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -250,29 +277,31 @@ document.addEventListener("DOMContentLoaded", function () {
   }, 60000);
 });
 
-function handleFreeTextInput(userInput) {
-  if (!currentNode || !currentNode.steps) return;
-  const step = currentSteps[currentStepIndex];
-  if (!step) return;
+function startChat() {
+  const hour = new Date().getHours();
+  let greetingKey = 'night';
+  if (hour >= 6 && hour < 12) greetingKey = 'morning';
+  else if (hour >= 12 && hour < 20) greetingKey = 'afternoon';
 
-  const id = step.id;
-  if (id === "ask_name") {
-    userData.name = userInput;
-    currentStepIndex++;
-    runStep();
-  } else if (id === "ask_email") {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInput)) {
-      return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
+  const greetingNode = getNodeById('greeting');
+  const greetingText = greetingNode.messages[greetingKey];
+  const options = greetingNode.options;
+
+  appendMessageWithOptions(greetingText, options, (option) => {
+    if (option === "Contratar servicio") {
+      nextNode(greetingNode.next);
+    } else {
+      appendMessage("Por favor, selecciona una opción relacionada con nuestros servicios.", "bot");
     }
-    userData.email = userInput;
-    currentStepIndex++;
-    runStep();
-  } else if (id === "ask_phone") {
-    if (!/^[\d\s\+\-\(\)]{7,}$/.test(userInput)) {
-      return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
-    }
-    userData.phone = userInput;
-    currentStepIndex++;
-    runStep();
-  }
+  });
+}
+
+function formatTimeElapsed(timestamp) {
+  const now = new Date();
+  const diffMin = Math.floor((now - timestamp) / 60000);
+  if (diffMin < 60) return `Hace ${diffMin <= 0 ? "1 min" : diffMin + " min"}`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `Hace ${diffHr === 1 ? "1 hora" : diffHr + " horas"}`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `Hace ${diffDay === 1 ? "1 día" : diffDay + " días"}`;
 }
