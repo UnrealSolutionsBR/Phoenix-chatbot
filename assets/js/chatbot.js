@@ -122,7 +122,11 @@ function appendMessageWithOptions(text, options, onClickHandler) {
 
 function runStep() {
   const step = currentSteps[currentStepIndex];
-  if (!step) return nextNode(currentNode.next);
+  if (!step) {
+    // Si no hay más pasos, avanzar al siguiente nodo
+    if (currentNode.next) return nextNode(currentNode.next);
+    return;
+  }
 
   if (step.messages) {
     const randomMessage = step.messages[Math.floor(Math.random() * step.messages.length)];
