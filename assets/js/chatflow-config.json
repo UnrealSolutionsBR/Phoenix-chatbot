@@ -170,11 +170,11 @@
       {
         "id": "final_closure",
         "messages": [
-          "Gracias por toda la información, {name}. Nuestro equipo de ventas se pondrá en contacto contigo muy pronto para entender mejor tu solicitud y enviarte un presupuesto detallado.",
-          "[GIF: imagen profesional de seguimiento o saludo]",
-          "Esperamos que este sea el primer paso de una buena relación profesional. Gracias por confiar en Unreal Solutions."
+          "Gracias por toda la información, {name}. Nuestro equipo de ventas se pondrá en contacto contigo muy pronto.",
+          { "gif": "https://media.tenor.com/lv3c-vKjBLcAAAAC/can-yaman-can-divit.gif" },
+          "Esperamos que este sea el primer paso de una buena relación profesional."
         ]
-      }
+      }      
     ]
   }
   

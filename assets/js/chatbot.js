@@ -1,4 +1,5 @@
-// chatbot.js completo con control de avance por step.next y logs de debug
+// Versión actualizada de chatbot.js para manejar GIFs desde el JSON como objetos
+
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const flow = phoenixChatbotBaseUrlData.flow.conversation;
 
@@ -25,32 +26,7 @@ function replaceVariables(text) {
   return text.replace(/\{(\w+)\}/g, (_, key) => userData[key] || `{${key}}`);
 }
 
-function appendMessageWithOptions(text, options, onClickHandler) {
-  simulateTypingAndRespond(() => {
-    if (text) appendMessage(text, "bot");
-
-    const messages = document.getElementById("phoenix-chat-messages");
-    const buttonRow = document.createElement("div");
-    buttonRow.className = "phoenix-option-buttons";
-
-    options.forEach((option) => {
-      const button = document.createElement("button");
-      button.className = "phoenix-option-button";
-      button.textContent = option;
-      button.onclick = function () {
-        appendMessage(option, "user");
-        buttonRow.remove();
-        onClickHandler(option);
-      };
-      buttonRow.appendChild(button);
-    });
-
-    messages.appendChild(buttonRow);
-    messages.scrollTop = messages.scrollHeight;
-  }, text + options.join(" "));
-}
-
-function appendMessage(text, sender, isTemporary = false) {
+function appendMessage(content, sender, isTemporary = false) {
   const messages = document.getElementById("phoenix-chat-messages");
   const msgWrapper = document.createElement("div");
   msgWrapper.className = "phoenix-message " + sender;
@@ -74,7 +50,11 @@ function appendMessage(text, sender, isTemporary = false) {
     botMessageTimes.push({ meta, timestamp });
 
     const textNode = document.createElement("div");
-    textNode.innerHTML = text.replace(/\n/g, "<br>");
+    if (typeof content === "object" && content.gif) {
+      textNode.innerHTML = `<img src="${content.gif}" alt="GIF" style="max-width: 100%; border-radius: 10px;">`;
+    } else {
+      textNode.innerHTML = replaceVariables(content).replace(/\n/g, "<br>");
+    }
 
     bubble.appendChild(meta);
     bubble.appendChild(textNode);
@@ -83,7 +63,7 @@ function appendMessage(text, sender, isTemporary = false) {
   } else {
     const bubble = document.createElement("div");
     bubble.className = "phoenix-message-content-user";
-    bubble.textContent = text;
+    bubble.textContent = content;
     msgWrapper.appendChild(bubble);
   }
 
@@ -113,69 +93,23 @@ function simulateTypingAndRespond(callback, responseText) {
   messages.appendChild(loading);
   messages.scrollTop = messages.scrollHeight;
 
-  const delay = Math.min(3000 + responseText.length * 25, 8000);
+  const delay = Math.min(3000 + (typeof responseText === 'string' ? responseText.length * 25 : 400), 8000);
   setTimeout(() => {
     loading.remove();
     callback();
   }, delay);
 }
 
-function runStep() {
-  const step = currentSteps[currentStepIndex];
-  console.log("Ejecutando runStep para", step?.id);
-  if (!step) return;
-
-  const goToNext = () => {
-    console.log("→ goToNext llamado desde runStep. step.next:", step.next);
-    if (step.next) {
-      const nextStepIndex = currentSteps.findIndex(s => s.id === step.next);
-      if (nextStepIndex !== -1) {
-        console.log("→ Avanzando internamente a step:", step.next);
-        currentStepIndex = nextStepIndex;
-        runStep();
-        return;
-      } else {
-        console.log("→ Redirigiendo a nodo externo:", step.next);
-        return nextNode(step.next);
-      }
-    }
-    currentStepIndex++;
-    if (currentStepIndex < currentSteps.length) {
-      runStep();
-    } else if (currentNode.next) {
-      nextNode(currentNode.next);
-    }
-  };
-
-  if (step.messages) {
-    const randomMessage = step.messages[Math.floor(Math.random() * step.messages.length)];
-    const message = replaceVariables(randomMessage);
-    console.log("Mostrando mensaje de step", step.id, ":", message);
-    simulateTypingAndRespond(() => {
-      appendMessage(message, "bot");
-      if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) {
-        goToNext();
-      }
-    }, message);
-  } else if (step.question && step.options) {
-    appendMessageWithOptions(step.question, step.options, (option) => {
-      userData[step.id] = option;
-      goToNext();
-    });
-  }
-}
-
 function runMessages(messages, callback, index = 0) {
   if (index >= messages.length) return callback();
-  const msg = replaceVariables(messages[index]);
+  const msg = messages[index];
   simulateTypingAndRespond(() => {
     appendMessage(msg, "bot");
     runMessages(messages, callback, index + 1);
-  }, msg);
+  }, typeof msg === 'string' ? msg : '[GIF]');
 }
 
 function nextNode(id) {
-  console.log("nextNode:", id);
   currentNode = getNodeById(id);
   if (!currentNode) return console.error("❌ Nodo no encontrado:", id);
 
@@ -184,7 +118,7 @@ function nextNode(id) {
     currentStepIndex = 0;
     runStep();
   } else if (currentNode.messages) {
-    runMessages(currentNode.messages.map(replaceVariables), () => {
+    runMessages(currentNode.messages, () => {
       if (currentNode.next) nextNode(currentNode.next);
     });
   } else if (currentNode.question && currentNode.options) {
@@ -199,25 +133,18 @@ function nextNode(id) {
   }
 }
 
-function handleFreeTextInput(userInput) {
-  if (!currentNode || !currentNode.steps) return;
+function runStep() {
   const step = currentSteps[currentStepIndex];
   if (!step) return;
 
-  console.log("Usuario escribió:", userInput);
-  console.log("Validando input para step:", step.id);
-
   const goToNext = () => {
-    console.log("→ goToNext llamado desde input para", step.id);
     if (step.next) {
       const nextStepIndex = currentSteps.findIndex(s => s.id === step.next);
       if (nextStepIndex !== -1) {
-        console.log("→ Avanzando internamente a step:", step.next);
         currentStepIndex = nextStepIndex;
         runStep();
         return;
       } else {
-        console.log("→ Redirigiendo a nodo externo:", step.next);
         return nextNode(step.next);
       }
     }
@@ -229,23 +156,59 @@ function handleFreeTextInput(userInput) {
     }
   };
 
-  const id = step.id;
-  if (id === "ask_name") {
-    userData.name = userInput;
-    goToNext();
-  } else if (id === "ask_email") {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInput)) {
-      return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
-    }
-    userData.email = userInput;
-    goToNext();
-  } else if (id === "ask_phone") {
-    if (!/^[\d\s\+\-\(\)]{7,}$/.test(userInput)) {
-      return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
-    }
-    userData.phone = userInput;
-    goToNext();
+  if (step.messages) {
+    const randomMessage = step.messages[Math.floor(Math.random() * step.messages.length)];
+    simulateTypingAndRespond(() => {
+      appendMessage(randomMessage, "bot");
+      if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) goToNext();
+    }, randomMessage);
+  } else if (step.question && step.options) {
+    appendMessageWithOptions(step.question, step.options, (option) => {
+      userData[step.id] = option;
+      if (step.followup) {
+        runMessages(step.followup, () => {
+          if (step.types) {
+            const typeMsgs = step.types.map(type =>
+              { return { gif: null, text: `<b>${type.name}</b>: ${type.description}${type.example ? `<br><i>${type.example}</i>` : ''}` }; });
+            runMessages(typeMsgs.map(t => t.text), goToNext);
+          } else {
+            goToNext();
+          }
+        });
+      } else if (step.types) {
+        const typeMsgs = step.types.map(type =>
+          `<b>${type.name}</b>: ${type.description}${type.example ? `<br><i>${type.example}</i>` : ''}`);
+        runMessages(typeMsgs, goToNext);
+      } else {
+        goToNext();
+      }
+    });
   }
+}
+
+function appendMessageWithOptions(text, options, onClickHandler) {
+  simulateTypingAndRespond(() => {
+    if (text) appendMessage(text, "bot");
+
+    const messages = document.getElementById("phoenix-chat-messages");
+    const buttonRow = document.createElement("div");
+    buttonRow.className = "phoenix-option-buttons";
+
+    options.forEach((option) => {
+      const button = document.createElement("button");
+      button.className = "phoenix-option-button";
+      button.textContent = option;
+      button.onclick = function () {
+        appendMessage(option, "user");
+        buttonRow.remove();
+        onClickHandler(option);
+      };
+      buttonRow.appendChild(button);
+    });
+
+    messages.appendChild(buttonRow);
+    messages.scrollTop = messages.scrollHeight;
+  }, text + options.join(" "));
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -294,6 +257,48 @@ function startChat() {
       appendMessage("Por favor, selecciona una opción relacionada con nuestros servicios.", "bot");
     }
   });
+}
+
+function handleFreeTextInput(userInput) {
+  if (!currentNode || !currentNode.steps) return;
+  const step = currentSteps[currentStepIndex];
+  if (!step) return;
+
+  const goToNext = () => {
+    if (step.next) {
+      const nextStepIndex = currentSteps.findIndex(s => s.id === step.next);
+      if (nextStepIndex !== -1) {
+        currentStepIndex = nextStepIndex;
+        runStep();
+        return;
+      } else {
+        return nextNode(step.next);
+      }
+    }
+    currentStepIndex++;
+    if (currentStepIndex < currentSteps.length) {
+      runStep();
+    } else if (currentNode.next) {
+      nextNode(currentNode.next);
+    }
+  };
+
+  if (step.id === "ask_name") {
+    userData.name = userInput;
+    goToNext();
+  } else if (step.id === "ask_email") {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInput)) {
+      return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
+    }
+    userData.email = userInput;
+    goToNext();
+  } else if (step.id === "ask_phone") {
+    if (!/^[\d\s\+\-\(\)]{7,}$/.test(userInput)) {
+      return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
+    }
+    userData.phone = userInput;
+    goToNext();
+  }
 }
 
 function formatTimeElapsed(timestamp) {
