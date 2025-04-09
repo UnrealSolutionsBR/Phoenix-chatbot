@@ -1,4 +1,4 @@
-// chatbot.js completo adaptado a estructura JSON dinámica y lógica UI en un solo archivo
+// chatbot.js corregido para elegir solo un mensaje aleatorio por step y esperar input del usuario
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const flow = phoenixChatbotBaseUrlData.flow.conversation;
 
@@ -120,25 +120,16 @@ function appendMessageWithOptions(text, options, onClickHandler) {
   }, text + options.join(" "));
 }
 
-function runMessages(messages, callback, index = 0) {
-  if (index >= messages.length) return callback();
-  const msg = replaceVariables(messages[index]);
-  simulateTypingAndRespond(() => {
-    appendMessage(msg, "bot");
-    runMessages(messages, callback, index + 1);
-  }, msg);
-}
-
 function runStep() {
   const step = currentSteps[currentStepIndex];
   if (!step) return nextNode(currentNode.next);
 
   if (step.messages) {
-    const messages = step.messages.map(replaceVariables);
-    runMessages(messages, () => {
-      currentStepIndex++;
-      runStep();
-    });
+    const randomMessage = step.messages[Math.floor(Math.random() * step.messages.length)];
+    const message = replaceVariables(randomMessage);
+    simulateTypingAndRespond(() => {
+      appendMessage(message, "bot");
+    }, message);
   } else if (step.question && step.options) {
     appendMessageWithOptions(step.question, step.options, (option) => {
       userData[step.id] = option;
@@ -161,6 +152,15 @@ function runStep() {
       }
     });
   }
+}
+
+function runMessages(messages, callback, index = 0) {
+  if (index >= messages.length) return callback();
+  const msg = replaceVariables(messages[index]);
+  simulateTypingAndRespond(() => {
+    appendMessage(msg, "bot");
+    runMessages(messages, callback, index + 1);
+  }, msg);
 }
 
 function nextNode(id) {
@@ -216,8 +216,6 @@ function formatTimeElapsed(timestamp) {
   const diffDay = Math.floor(diffHr / 24);
   return `Hace ${diffDay === 1 ? "1 día" : diffDay + " días"}`;
 }
-
-// Evento inicial y manejo de inputs
 
 document.addEventListener("DOMContentLoaded", function () {
   const input = document.getElementById("phoenix-user-input");
