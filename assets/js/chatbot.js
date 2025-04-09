@@ -1,4 +1,4 @@
-// chatbot.js completo actualizado para mostrar GIFs dentro del mismo bubble
+// Versión actualizada de chatbot.js para manejar GIFs desde el JSON como objetos
 
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const flow = phoenixChatbotBaseUrlData.flow.conversation;
@@ -26,10 +26,11 @@ function replaceVariables(text) {
   return text.replace(/\{(\w+)\}/g, (_, key) => userData[key] || `{${key}}`);
 }
 
-function appendMessage(content, sender) {
+function appendMessage(content, sender, isTemporary = false) {
   const messages = document.getElementById("phoenix-chat-messages");
   const msgWrapper = document.createElement("div");
   msgWrapper.className = "phoenix-message " + sender;
+  if (isTemporary) msgWrapper.classList.add("typing");
 
   if (sender === "bot") {
     const avatar = document.createElement("img");
@@ -45,18 +46,17 @@ function appendMessage(content, sender) {
     const timestamp = new Date();
     meta.dataset.timestamp = timestamp.getTime();
     meta.textContent = `${activeAssistant.name} • Hace 1 min`;
+
     botMessageTimes.push({ meta, timestamp });
 
     const textNode = document.createElement("div");
-    console.log("Contenido recibido en appendMessage:", content);
-
     if (typeof content === "object" && content.gif) {
-      const gifUrl = content.gif;
-      const text = content.text || "";
-      textNode.innerHTML = `${replaceVariables(text).replace(/\n/g, "<br>")}<br><img src="${gifUrl}" alt="GIF" style="max-width: 50%; border-radius: 10px; margin-top: 8px;">`;
-    } else {
-      textNode.innerHTML = replaceVariables(content).replace(/\n/g, "<br>");
-    }
+  const text = content.text ? replaceVariables(content.text).replace(/\n/g, "<br>") + "<br>" : "";
+  const gif = `<img src="${content.gif}" alt="GIF" style="max-width: 100%; border-radius: 10px;">`;
+  textNode.innerHTML = text + gif;
+} else {
+  textNode.innerHTML = replaceVariables(content).replace(/\n/g, "<br>");
+}
 
     bubble.appendChild(meta);
     bubble.appendChild(textNode);
@@ -120,10 +120,19 @@ function nextNode(id) {
     currentStepIndex = 0;
     runStep();
   } else if (currentNode.messages) {
-    runMessages(currentNode.messages, () => {
-      if (currentNode.next) nextNode(currentNode.next);
-    });
-  } else if (currentNode.question && currentNode.options) {
+    if (currentNode.send_all) {
+      runMessages(currentNode.messages, () => {
+        if (currentNode.next) nextNode(currentNode.next);
+      });
+    } else {
+      const randomMessage = currentNode.messages[Math.floor(Math.random() * currentNode.messages.length)];
+      simulateTypingAndRespond(() => {
+        appendMessage(randomMessage, "bot");
+        if (currentNode.next) nextNode(currentNode.next);
+      }, randomMessage);
+    }
+  }
+   else if (currentNode.question && currentNode.options) {
     appendMessageWithOptions(currentNode.question, currentNode.options, (option) => {
       userData[currentNode.id] = option;
       if (currentNode.next_if && currentNode.next_if[option]) {

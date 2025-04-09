@@ -134,6 +134,7 @@
           },
           {
             "id": "budget_estimation",
+            "send_all": true,
             "messages": [
               "Con lo que me comentaste, te puedo dar una estimación inicial para este tipo de proyecto.",
               "Por ejemplo, para un sitio {type}, el valor de inversión suele partir desde USD $X,XXX.",
@@ -171,10 +172,12 @@
         "id": "final_closure",
         "messages": [
           "Gracias por toda la información, {name}. Nuestro equipo de ventas se pondrá en contacto contigo muy pronto.",
-          { "gif": "https://tenor.com/bkXHb.gif" },
-          "Esperamos que este sea el primer paso de una buena relación profesional."
+          {
+            "text": "Esperamos que este sea el primer paso de una buena relación profesional.",
+            "gif": "https://c.tenor.com/rupAfSSbtCEAAAAd/tenor.gif"
+          }
         ]
-      }      
+      }     
     ]
   }
   
