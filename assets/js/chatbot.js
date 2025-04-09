@@ -1,7 +1,6 @@
-// chatbot.js actualizado para manejar stepkeys, options, messages y types según flujo completo
+// chatbot.js completo adaptado a estructura JSON dinámica y lógica UI en un solo archivo
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
-const chatflow = phoenixChatbotBaseUrlData.flow;
-const greetings = chatflow.greeting;
+const flow = phoenixChatbotBaseUrlData.flow.conversation;
 
 const phoenixAssistants = [
   { name: "Valeria", avatar: phoenixChatbotBaseUrl + "assets/img/Valeria.png" },
@@ -13,257 +12,222 @@ const phoenixAssistants = [
 
 const activeAssistant = phoenixAssistants[Math.floor(Math.random() * phoenixAssistants.length)];
 let botMessageTimes = [];
-
-let currentFlowKey = null;
-let currentFlowStep = 0;
-let currentFlowKeys = [];
 let userData = {};
-let currentFlow = null;
+let currentStepIndex = 0;
+let currentSteps = [];
+let currentNode = null;
 
-document.addEventListener("DOMContentLoaded", function () {
-  const input = document.getElementById("phoenix-user-input");
-  const sendBtn = document.getElementById("phoenix-send-btn");
+function getNodeById(id) {
+  return flow.find(node => node.id === id);
+}
+
+function replaceVariables(text) {
+  return text.replace(/\{(\w+)\}/g, (_, key) => userData[key] || `{${key}}`);
+}
+
+function appendMessage(text, sender, isTemporary = false) {
   const messages = document.getElementById("phoenix-chat-messages");
-  const loader = document.getElementById("phoenix-loader");
-  const chatbot = document.querySelector(".phoenix-chatbot-container");
+  const msgWrapper = document.createElement("div");
+  msgWrapper.className = "phoenix-message " + sender;
+  if (isTemporary) msgWrapper.classList.add("typing");
 
-  function appendMessage(text, sender, isTemporary = false) {
-    const msgWrapper = document.createElement("div");
-    msgWrapper.className = "phoenix-message " + sender;
-    if (isTemporary) msgWrapper.classList.add("typing");
-
-    if (sender === "bot") {
-      const avatar = document.createElement("img");
-      avatar.src = activeAssistant.avatar;
-      avatar.alt = activeAssistant.name;
-      avatar.className = "phoenix-bot-avatar";
-
-      const bubble = document.createElement("div");
-      bubble.className = "phoenix-message-content";
-
-      const meta = document.createElement("div");
-      meta.className = "phoenix-message-meta";
-      const timestamp = new Date();
-      meta.dataset.timestamp = timestamp.getTime();
-      meta.textContent = `${activeAssistant.name} • Hace 1 min`;
-
-      botMessageTimes.push({ meta, timestamp });
-
-      const textNode = document.createElement("div");
-      textNode.innerHTML = text.replace(/\n/g, "<br>");
-
-      bubble.appendChild(meta);
-      bubble.appendChild(textNode);
-      msgWrapper.appendChild(avatar);
-      msgWrapper.appendChild(bubble);
-    } else {
-      const bubble = document.createElement("div");
-      bubble.className = "phoenix-message-content-user";
-      bubble.textContent = text;
-      msgWrapper.appendChild(bubble);
-    }
-
-    messages.appendChild(msgWrapper);
-    messages.scrollTop = messages.scrollHeight;
-
-    return msgWrapper;
-  }
-
-  function simulateTypingAndRespond(callback, responseText) {
-    const loading = document.createElement("div");
-    loading.className = "phoenix-message bot typing";
-
+  if (sender === "bot") {
     const avatar = document.createElement("img");
     avatar.src = activeAssistant.avatar;
     avatar.alt = activeAssistant.name;
     avatar.className = "phoenix-bot-avatar";
 
     const bubble = document.createElement("div");
-    bubble.className = "phoenix-message-content phoenix-typing-indicator";
+    bubble.className = "phoenix-message-content";
 
-    const typingText = document.createElement("div");
-    typingText.className = "phoenix-typing-text";
+    const meta = document.createElement("div");
+    meta.className = "phoenix-message-meta";
+    const timestamp = new Date();
+    meta.dataset.timestamp = timestamp.getTime();
+    meta.textContent = `${activeAssistant.name} • Hace 1 min`;
 
-    bubble.appendChild(typingText);
-    loading.appendChild(avatar);
-    loading.appendChild(bubble);
-    messages.appendChild(loading);
+    botMessageTimes.push({ meta, timestamp });
+
+    const textNode = document.createElement("div");
+    textNode.innerHTML = text.replace(/\n/g, "<br>");
+
+    bubble.appendChild(meta);
+    bubble.appendChild(textNode);
+    msgWrapper.appendChild(avatar);
+    msgWrapper.appendChild(bubble);
+  } else {
+    const bubble = document.createElement("div");
+    bubble.className = "phoenix-message-content-user";
+    bubble.textContent = text;
+    msgWrapper.appendChild(bubble);
+  }
+
+  messages.appendChild(msgWrapper);
+  messages.scrollTop = messages.scrollHeight;
+  return msgWrapper;
+}
+
+function simulateTypingAndRespond(callback, responseText) {
+  const messages = document.getElementById("phoenix-chat-messages");
+  const loading = document.createElement("div");
+  loading.className = "phoenix-message bot typing";
+
+  const avatar = document.createElement("img");
+  avatar.src = activeAssistant.avatar;
+  avatar.alt = activeAssistant.name;
+  avatar.className = "phoenix-bot-avatar";
+
+  const bubble = document.createElement("div");
+  bubble.className = "phoenix-message-content phoenix-typing-indicator";
+  const typingText = document.createElement("div");
+  typingText.className = "phoenix-typing-text";
+
+  bubble.appendChild(typingText);
+  loading.appendChild(avatar);
+  loading.appendChild(bubble);
+  messages.appendChild(loading);
+  messages.scrollTop = messages.scrollHeight;
+
+  const delay = Math.min(3000 + responseText.length * 25, 8000);
+  setTimeout(() => {
+    loading.remove();
+    callback();
+  }, delay);
+}
+
+function appendMessageWithOptions(text, options, onClickHandler) {
+  simulateTypingAndRespond(() => {
+    if (text) appendMessage(text, "bot");
+
+    const messages = document.getElementById("phoenix-chat-messages");
+    const buttonRow = document.createElement("div");
+    buttonRow.className = "phoenix-option-buttons";
+
+    options.forEach((option) => {
+      const button = document.createElement("button");
+      button.className = "phoenix-option-button";
+      button.textContent = option;
+      button.onclick = function () {
+        appendMessage(option, "user");
+        buttonRow.remove();
+        onClickHandler(option);
+      };
+      buttonRow.appendChild(button);
+    });
+
+    messages.appendChild(buttonRow);
     messages.scrollTop = messages.scrollHeight;
+  }, text + options.join(" "));
+}
 
-    const delay = Math.min(3000 + responseText.length * 25, 8000);
+function runMessages(messages, callback, index = 0) {
+  if (index >= messages.length) return callback();
+  const msg = replaceVariables(messages[index]);
+  simulateTypingAndRespond(() => {
+    appendMessage(msg, "bot");
+    runMessages(messages, callback, index + 1);
+  }, msg);
+}
 
-    setTimeout(() => {
-      loading.remove();
-      callback();
-    }, delay);
-  }
+function runStep() {
+  const step = currentSteps[currentStepIndex];
+  if (!step) return nextNode(currentNode.next);
 
-  function appendMessageWithOptions(text, options, onClickHandler) {
-    simulateTypingAndRespond(() => {
-      if (text) appendMessage(text, "bot");
-
-      const buttonRow = document.createElement("div");
-      buttonRow.className = "phoenix-option-buttons";
-
-      options.forEach((option) => {
-        const button = document.createElement("button");
-        button.className = "phoenix-option-button";
-        button.textContent = option;
-        button.onclick = function () {
-          appendMessage(option, "user");
-          buttonRow.remove();
-          onClickHandler(option);
-        };
-        buttonRow.appendChild(button);
-      });
-
-      messages.appendChild(buttonRow);
-      messages.scrollTop = messages.scrollHeight;
-    }, text + options.join(" "));
-  }
-
-  function getGreetingByTime() {
-    const hour = new Date().getHours();
-    if (hour >= 6 && hour < 12) return greetings.morning;
-    if (hour >= 12 && hour < 20) return greetings.afternoon;
-    return greetings.night;
-  }
-
-  function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  }
-
-  function isValidPhone(phone) {
-    return /^[\d\s\+\-\(\)]{7,}$/.test(phone);
-  }
-
-  function runFlow(key) {
-    currentFlowKey = key;
-    currentFlow = chatflow[key];
-    currentFlowStep = 0;
-
-    if (typeof currentFlow === "object" && !Array.isArray(currentFlow)) {
-      if ('messages' in currentFlow) {
-        currentFlowKeys = currentFlow.messages;
-        runNextFinalMessages();
+  if (step.messages) {
+    const messages = step.messages.map(replaceVariables);
+    runMessages(messages, () => {
+      currentStepIndex++;
+      runStep();
+    });
+  } else if (step.question && step.options) {
+    appendMessageWithOptions(step.question, step.options, (option) => {
+      userData[step.id] = option;
+      if (step.followup) {
+        runMessages(step.followup.map(replaceVariables), () => {
+          currentStepIndex++;
+          runStep();
+        });
+      } else if (step.types) {
+        const typeMsgs = step.types.map(type =>
+          `<b>${type.name}</b>: ${type.description}${type.example ? `<br><i>${type.example}</i>` : ''}`
+        );
+        runMessages(typeMsgs, () => {
+          currentStepIndex++;
+          runStep();
+        });
       } else {
-        currentFlowKeys = Object.keys(currentFlow);
-        runNextFlowStep();
+        currentStepIndex++;
+        runStep();
       }
-    } else if (Array.isArray(currentFlow)) {
-      currentFlowKeys = currentFlow;
-      runNextFinalMessages();
-    }
+    });
   }
+}
 
-  function runNextFlow() {
-    const order = [
-      "collect_user_data",
-      "lead_qualification",
-      "service_selection",
-      "web_development_branch",
-      "types",
-      "objective",
-      "content_preparation",
-      "budget_estimation",
-      "evaluation",
-      "timeline_followup",
-      "final_closure"
-    ];
-    const nextIndex = order.indexOf(currentFlowKey) + 1;
-    if (nextIndex < order.length) runFlow(order[nextIndex]);
+function nextNode(id) {
+  currentNode = getNodeById(id);
+  if (!currentNode) return;
+
+  if (currentNode.steps) {
+    currentSteps = currentNode.steps;
+    currentStepIndex = 0;
+    runStep();
+  } else if (currentNode.messages) {
+    const messages = currentNode.messages;
+    runMessages(messages.map(replaceVariables), () => {
+      if (currentNode.next) nextNode(currentNode.next);
+    });
+  } else if (currentNode.question && currentNode.options) {
+    appendMessageWithOptions(currentNode.question, currentNode.options, (option) => {
+      userData[currentNode.id] = option;
+      if (currentNode.next_if && currentNode.next_if[option]) {
+        nextNode(currentNode.next_if[option]);
+      } else {
+        nextNode(currentNode.next);
+      }
+    });
   }
+}
 
-  function runNextFlowStep() {
-    const stepKey = currentFlowKeys[currentFlowStep];
-    if (!stepKey) return runNextFlow();
+function startChat() {
+  const hour = new Date().getHours();
+  let greetingKey = 'night';
+  if (hour >= 6 && hour < 12) greetingKey = 'morning';
+  else if (hour >= 12 && hour < 20) greetingKey = 'afternoon';
 
-    const stepValue = currentFlow[stepKey];
+  const greetingNode = getNodeById('greeting');
+  const greetingText = greetingNode.messages[greetingKey];
+  const options = greetingNode.options;
 
-    if (Array.isArray(stepValue)) {
-      const randomIndex = Math.floor(Math.random() * stepValue.length);
-      let message = stepValue[randomIndex];
-      if (stepKey.includes("email") && userData.name) {
-        message = message.replace("{name}", userData.name);
-      }
-      simulateTypingAndRespond(() => {
-        appendMessage(message, "bot");
-      }, message);
-    } else if (typeof stepValue === "object") {
-      if ('question' in stepValue && 'options' in stepValue) {
-        simulateTypingAndRespond(() => {
-          appendMessageWithOptions(stepValue.question, stepValue.options, (option) => {
-            userData[stepKey] = option;
-            if (stepValue.followup) {
-              stepValue.followup.forEach((followup) => {
-                if (typeof followup === 'string') {
-                  simulateTypingAndRespond(() => appendMessage(followup, "bot"), followup);
-                } else if (followup.types) {
-                  followup.types.forEach((type) => {
-                    const msg = `<b>${type.name}</b>: ${type.description}${type.example ? `<br><i>${type.example}</i>` : ''}`;
-                    simulateTypingAndRespond(() => appendMessage(msg, "bot"), msg);
-                  });
-                }
-              });
-            }
-            currentFlowStep++;
-            runNextFlowStep();
-          });
-        }, stepValue.question);
-      }
+  appendMessageWithOptions(greetingText, options, (option) => {
+    if (option === "Contratar servicio") {
+      nextNode(greetingNode.next);
     } else {
-      simulateTypingAndRespond(() => {
-        appendMessage(stepValue, "bot");
-      }, stepValue);
+      appendMessage("Por favor, selecciona una opción relacionada con nuestros servicios.", "bot");
     }
-  }
+  });
+}
 
-  function runNextFinalMessages() {
-    const message = currentFlowKeys[currentFlowStep];
-    if (!message) return runNextFlow();
+function formatTimeElapsed(timestamp) {
+  const now = new Date();
+  const diffMin = Math.floor((now - timestamp) / 60000);
+  if (diffMin < 60) return `Hace ${diffMin <= 0 ? "1 min" : diffMin + " min"}`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `Hace ${diffHr === 1 ? "1 hora" : diffHr + " horas"}`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `Hace ${diffDay === 1 ? "1 día" : diffDay + " días"}`;
+}
 
-    const personalized = message.replace("{name}", userData.name || "usuario");
-    simulateTypingAndRespond(() => {
-      appendMessage(personalized, "bot");
-      currentFlowStep++;
-      runNextFinalMessages();
-    }, personalized);
-  }
+// Evento inicial y manejo de inputs
 
-  function handleUserFlowInput(userInput) {
-    const stepKey = currentFlowKeys[currentFlowStep];
-
-    if (stepKey === "ask_name") {
-      userData.name = userInput;
-      currentFlowStep++;
-      runNextFlowStep();
-    } else if (stepKey === "ask_email") {
-      if (!isValidEmail(userInput)) {
-        return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
-      }
-      userData.email = userInput;
-      currentFlowStep++;
-      runNextFlowStep();
-    } else if (stepKey === "ask_phone") {
-      if (!isValidPhone(userInput)) {
-        return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
-      }
-      userData.phone = userInput;
-      currentFlowStep++;
-      runNextFlowStep();
-    }
-  }
+document.addEventListener("DOMContentLoaded", function () {
+  const input = document.getElementById("phoenix-user-input");
+  const sendBtn = document.getElementById("phoenix-send-btn");
 
   sendBtn.addEventListener("click", function () {
     const userInput = input.value.trim();
     if (!userInput) return;
-
     appendMessage(userInput, "user");
-
-    if (currentFlow && typeof currentFlow === "object") {
-      handleUserFlowInput(userInput);
-    }
-
+    handleFreeTextInput(userInput);
     input.value = "";
   });
 
@@ -272,19 +236,9 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   setTimeout(() => {
-    loader.style.display = "none";
-    chatbot.style.display = "flex";
-
-    const greeting = getGreetingByTime();
-    const options = greetings.options;
-
-    appendMessageWithOptions(greeting, options, (option) => {
-      if (option === "Contratar servicio") {
-        runFlow("collect_user_data");
-      } else {
-        appendMessage("Por favor, selecciona una opción relacionada con nuestros servicios.", "bot");
-      }
-    });
+    document.getElementById("phoenix-loader").style.display = "none";
+    document.querySelector(".phoenix-chatbot-container").style.display = "flex";
+    startChat();
   }, 1000);
 
   setInterval(() => {
@@ -292,14 +246,31 @@ document.addEventListener("DOMContentLoaded", function () {
       meta.textContent = `${activeAssistant.name} • ${formatTimeElapsed(timestamp)}`;
     });
   }, 60000);
-
-  function formatTimeElapsed(timestamp) {
-    const now = new Date();
-    const diffMin = Math.floor((now - timestamp) / 60000);
-    if (diffMin < 60) return `Hace ${diffMin <= 0 ? "1 min" : diffMin + " min"}`;
-    const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `Hace ${diffHr === 1 ? "1 hora" : diffHr + " horas"}`;
-    const diffDay = Math.floor(diffHr / 24);
-    return `Hace ${diffDay === 1 ? "1 día" : diffDay + " días"}`;
-  }
 });
+
+function handleFreeTextInput(userInput) {
+  if (!currentNode || !currentNode.steps) return;
+  const step = currentSteps[currentStepIndex];
+  if (!step) return;
+
+  const id = step.id;
+  if (id === "ask_name") {
+    userData.name = userInput;
+    currentStepIndex++;
+    runStep();
+  } else if (id === "ask_email") {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInput)) {
+      return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
+    }
+    userData.email = userInput;
+    currentStepIndex++;
+    runStep();
+  } else if (id === "ask_phone") {
+    if (!/^[\d\s\+\-\(\)]{7,}$/.test(userInput)) {
+      return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
+    }
+    userData.phone = userInput;
+    currentStepIndex++;
+    runStep();
+  }
+}
