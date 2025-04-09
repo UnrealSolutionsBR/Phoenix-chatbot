@@ -1,4 +1,4 @@
-// Versión actualizada de chatbot.js para manejar GIFs desde el JSON como objetos
+// chatbot.js completo actualizado para mostrar GIFs dentro del mismo bubble
 
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const flow = phoenixChatbotBaseUrlData.flow.conversation;
@@ -26,11 +26,10 @@ function replaceVariables(text) {
   return text.replace(/\{(\w+)\}/g, (_, key) => userData[key] || `{${key}}`);
 }
 
-function appendMessage(content, sender, isTemporary = false) {
+function appendMessage(content, sender) {
   const messages = document.getElementById("phoenix-chat-messages");
   const msgWrapper = document.createElement("div");
   msgWrapper.className = "phoenix-message " + sender;
-  if (isTemporary) msgWrapper.classList.add("typing");
 
   if (sender === "bot") {
     const avatar = document.createElement("img");
@@ -46,12 +45,15 @@ function appendMessage(content, sender, isTemporary = false) {
     const timestamp = new Date();
     meta.dataset.timestamp = timestamp.getTime();
     meta.textContent = `${activeAssistant.name} • Hace 1 min`;
-
     botMessageTimes.push({ meta, timestamp });
 
     const textNode = document.createElement("div");
+    console.log("Contenido recibido en appendMessage:", content);
+
     if (typeof content === "object" && content.gif) {
-      textNode.innerHTML = `<img src="${content.gif}" alt="GIF" style="max-width: 100%; border-radius: 10px;">`;
+      const gifUrl = content.gif;
+      const text = content.text || "";
+      textNode.innerHTML = `${replaceVariables(text).replace(/\n/g, "<br>")}<br><img src="${gifUrl}" alt="GIF" style="max-width: 50%; border-radius: 10px; margin-top: 8px;">`;
     } else {
       textNode.innerHTML = replaceVariables(content).replace(/\n/g, "<br>");
     }
