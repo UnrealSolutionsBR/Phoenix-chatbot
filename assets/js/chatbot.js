@@ -25,7 +25,6 @@ function replaceVariables(text) {
 }
 
 function appendMessage(content, sender, isTemporary = false) {
-  console.log(`🗨️ appendMessage() - Sender: ${sender}`, content);
   const messages = document.getElementById("phoenix-chat-messages");
   const msgWrapper = document.createElement("div");
   msgWrapper.className = "phoenix-message " + sender;
@@ -73,7 +72,6 @@ function appendMessage(content, sender, isTemporary = false) {
 }
 
 function simulateTypingAndRespond(callback, responseText) {
-  console.log("⌛ Simulando escritura. Contenido:", responseText);
   const messages = document.getElementById("phoenix-chat-messages");
   const loading = document.createElement("div");
   loading.className = "phoenix-message bot typing";
@@ -106,7 +104,6 @@ function runMessages(messages, callback, index = 0) {
   const rawMsg = messages[index];
   let processedMsg = rawMsg;
 
-  console.log(`📥 Mensaje crudo (${index + 1}/${messages.length}):`, rawMsg);
 
   if (typeof rawMsg === 'object' && rawMsg !== null) {
     if (rawMsg.text) {
@@ -121,7 +118,6 @@ function runMessages(messages, callback, index = 0) {
     processedMsg = replaceVariables(rawMsg);
   }
 
-  console.log("✅ Mensaje procesado:", processedMsg);
 
   simulateTypingAndRespond(() => {
     appendMessage(processedMsg, "bot");
@@ -131,9 +127,6 @@ function runMessages(messages, callback, index = 0) {
 
 function nextNode(id) {
   currentNode = getNodeById(id);
-  console.log("🚀 Entrando a nextNode:", id);
-  console.log("📂 Contenido del nodo:", currentNode);
-  if (!currentNode) return console.error("❌ Nodo no encontrado:", id);
 
   if (currentNode.steps) {
     currentSteps = currentNode.steps;
@@ -141,22 +134,18 @@ function nextNode(id) {
     runStep();
   } else if (currentNode.messages) {
     if (currentNode.send_all) {
-      console.log("📨 Enviando todos los mensajes del nodo:", currentNode.id);
       runMessages(currentNode.messages, () => {
         if (currentNode.next) nextNode(currentNode.next);
       });
     } else {
       const randomMessage = currentNode.messages[Math.floor(Math.random() * currentNode.messages.length)];
-      console.log("📨 Enviando mensaje aleatorio del nodo:", randomMessage);
       simulateTypingAndRespond(() => {
         appendMessage(randomMessage, "bot");
         if (currentNode.next) nextNode(currentNode.next);
       }, randomMessage);
     }
   } else if (currentNode.question && currentNode.options) {
-    console.log(`❓ Nodo ${currentNode.id} tiene pregunta y opciones. Mostrando...`);
     appendMessageWithOptions(currentNode.question, currentNode.options, (option) => {
-      console.log(`✅ Usuario eligió: ${option}`);
       userData[currentNode.id] = option;
       if (currentNode.next_if && currentNode.next_if[option]) {
         nextNode(currentNode.next_if[option]);
@@ -170,63 +159,47 @@ function nextNode(id) {
 function runStep() {
   const step = currentSteps[currentStepIndex];
   if (!step) {
-    console.warn("⚠️ No se encontró el step actual. currentStepIndex:", currentStepIndex);
     return;
   }
-
-  console.log(`🔄 Ejecutando runStep para: ${step.id}`);
-  console.log("📌 Detalle del step:", step);
-
   const goToNext = () => {
-    console.log(`➡️ goToNext ejecutado desde step: ${step.id}`);
     if (step.next) {
       const nextStepIndex = currentSteps.findIndex(s => s.id === step.next);
       if (nextStepIndex !== -1) {
-        console.log(`↪️ Saltando al step: ${step.next}`);
         currentStepIndex = nextStepIndex;
         runStep();
         return;
       } else {
-        console.log(`🔁 step.next no está en currentSteps. Se asume que es un nodo externo: ${step.next}`);
         return nextNode(step.next);
       }
     }
 
     currentStepIndex++;
     if (currentStepIndex < currentSteps.length) {
-      console.log("🔼 Avanzando al siguiente step:", currentSteps[currentStepIndex].id);
       runStep();
     } else if (currentNode.next) {
-      console.log("✅ Todos los steps terminados. Siguiente nodo:", currentNode.next);
       nextNode(currentNode.next);
     } else {
-      console.log("⛔ Fin del flujo. No hay más pasos ni nodo siguiente.");
     }
   };
 
   if (step.messages) {
     const messages = step.messages.map(replaceVariables);
     if (step.send_all) {
-      console.log(`📨 Step "${step.id}" tiene send_all: true. Mostrando todos los mensajes...`);
       runMessages(messages, () => {
         if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) goToNext();
       });
     } else {
       const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-      console.log(`📨 Mostrando mensaje aleatorio del step "${step.id}":`, randomMessage);
       simulateTypingAndRespond(() => {
         appendMessage(randomMessage, "bot");
         if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) goToNext();
       }, randomMessage);
     }
   } else if (step.question && step.options) {
-    console.log(`❓ Step "${step.id}" contiene pregunta y opciones. Mostrando...`);
     appendMessageWithOptions(step.question, step.options, (option) => {
-      console.log(`✅ Usuario respondió "${option}" en step: ${step.id}`);
       userData[step.id] = option;
 
       if (step.followup) {
-        console.log("📦 Step contiene mensajes de seguimiento. Mostrándolos...");
         runMessages(step.followup.map(replaceVariables), () => {
           if (step.types) {
             const typeMsgs = step.types.map(type =>
@@ -245,12 +218,10 @@ function runStep() {
       }
     });
   } else {
-    console.warn(`⚠️ El step "${step.id}" no tiene messages ni question. Se llama goToNext automáticamente.`);
     goToNext();
   }
 }
 function handleFreeTextInput(userInput) {
-  console.log("⌨️ Entrada libre del usuario:", userInput);
 
   if (!currentNode || !currentNode.steps) return;
   const step = currentSteps[currentStepIndex];
@@ -276,30 +247,24 @@ function handleFreeTextInput(userInput) {
   };
 
   if (step.id === "ask_name") {
-    console.log("🧍 Guardando nombre del usuario:", userInput);
     userData.name = userInput;
     goToNext();
   } else if (step.id === "ask_email") {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInput)) {
-      console.log("❌ Email inválido:", userInput);
       return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
     }
-    console.log("📧 Guardando email del usuario:", userInput);
     userData.email = userInput;
     goToNext();
   } else if (step.id === "ask_phone") {
     if (!/^[\d\s\+\-\(\)]{7,}$/.test(userInput)) {
-      console.log("❌ Teléfono inválido:", userInput);
       return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
     }
-    console.log("📞 Guardando teléfono del usuario:", userInput);
     userData.phone = userInput;
     goToNext();
   }
 }
 
 function appendMessageWithOptions(text, options, onClickHandler) {
-  console.log("🧭 Mostrando opciones:", options);
   simulateTypingAndRespond(() => {
     if (text) appendMessage(text, "bot");
 
@@ -312,7 +277,6 @@ function appendMessageWithOptions(text, options, onClickHandler) {
       button.className = "phoenix-option-button";
       button.textContent = option;
       button.onclick = function () {
-        console.log("👤 Usuario seleccionó opción:", option);
         appendMessage(option, "user");
         buttonRow.remove();
         onClickHandler(option);
@@ -326,7 +290,6 @@ function appendMessageWithOptions(text, options, onClickHandler) {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("🟢 DOM completamente cargado. Iniciando chatbot...");
   const input = document.getElementById("phoenix-user-input");
   const sendBtn = document.getElementById("phoenix-send-btn");
 
@@ -345,7 +308,6 @@ document.addEventListener("DOMContentLoaded", function () {
   setTimeout(() => {
     document.getElementById("phoenix-loader").style.display = "none";
     document.querySelector(".phoenix-chatbot-container").style.display = "flex";
-    console.log("🤖 Chatbot visible");
     startChat();
   }, 1000);
 
@@ -356,7 +318,6 @@ document.addEventListener("DOMContentLoaded", function () {
   }, 60000);
 });
 function startChat() {
-  console.log("🚀 Iniciando conversación con el usuario...");
   const hour = new Date().getHours();
   let greetingKey = 'night';
   if (hour >= 6 && hour < 12) greetingKey = 'morning';
@@ -364,16 +325,13 @@ function startChat() {
 
   const greetingNode = getNodeById('greeting');
   if (!greetingNode) {
-    console.error("❌ Nodo de saludo 'greeting' no encontrado.");
     return;
   }
 
   const greetingText = greetingNode.messages[greetingKey];
   const options = greetingNode.options;
 
-  console.log(`🌅 Mostrando saludo de: ${greetingKey}`, greetingText);
   appendMessageWithOptions(greetingText, options, (option) => {
-    console.log(`🧭 Usuario eligió en saludo: ${option}`);
     if (option === "Contratar servicio") {
       nextNode(greetingNode.next);
     } else {
