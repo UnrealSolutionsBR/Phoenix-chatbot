@@ -104,11 +104,12 @@ function simulateTypingAndRespond(callback, responseText) {
 
 function runMessages(messages, callback, index = 0) {
   if (index >= messages.length) return callback();
-  const msg = messages[index];
+  const msg = replaceVariables(messages[index]);
+  console.log(`📤 Mostrando mensaje (${index + 1}/${messages.length}):`, msg);
   simulateTypingAndRespond(() => {
     appendMessage(msg, "bot");
     runMessages(messages, callback, index + 1);
-  }, typeof msg === 'string' ? msg : '[GIF]');
+  }, msg);
 }
 
 function nextNode(id) {
@@ -146,42 +147,74 @@ function nextNode(id) {
 
 function runStep() {
   const step = currentSteps[currentStepIndex];
-  if (!step) return;
+  if (!step) {
+    console.warn("⚠️ No se encontró el step actual. currentStepIndex:", currentStepIndex);
+    return;
+  }
+
+  console.log(`🔄 Ejecutando runStep para: ${step.id}`);
+  console.log("📌 Detalle del step:", step);
 
   const goToNext = () => {
+    console.log(`➡️ goToNext ejecutado desde step: ${step.id}`);
     if (step.next) {
       const nextStepIndex = currentSteps.findIndex(s => s.id === step.next);
       if (nextStepIndex !== -1) {
+        console.log(`↪️ Saltando al step: ${step.next}`);
         currentStepIndex = nextStepIndex;
         runStep();
         return;
       } else {
+        console.log(`🔁 step.next no está en currentSteps. Se asume que es un nodo externo: ${step.next}`);
         return nextNode(step.next);
       }
     }
+
     currentStepIndex++;
     if (currentStepIndex < currentSteps.length) {
+      console.log("🔼 Avanzando al siguiente step:", currentSteps[currentStepIndex].id);
       runStep();
     } else if (currentNode.next) {
+      console.log("✅ Todos los steps terminados. Siguiente nodo:", currentNode.next);
       nextNode(currentNode.next);
+    } else {
+      console.log("⛔ Fin del flujo. No hay más pasos ni nodo siguiente.");
     }
   };
 
   if (step.messages) {
-    const randomMessage = step.messages[Math.floor(Math.random() * step.messages.length)];
+  const messages = step.messages.map(replaceVariables);
+
+  if (step.send_all) {
+    console.log(`📨 Step "${step.id}" tiene send_all: true. Mostrando todos los mensajes...`);
+    runMessages(messages, () => {
+      if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) {
+        goToNext();
+      }
+    });
+  } else {
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    console.log(`📨 Mostrando mensaje aleatorio del step "${step.id}":`, randomMessage);
     simulateTypingAndRespond(() => {
       appendMessage(randomMessage, "bot");
-      if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) goToNext();
+      if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) {
+        goToNext();
+      }
     }, randomMessage);
-  } else if (step.question && step.options) {
+  }
+} else if (step.question && step.options) {
+    console.log(`❓ Step "${step.id}" contiene pregunta y opciones. Mostrando al usuario...`);
     appendMessageWithOptions(step.question, step.options, (option) => {
+      console.log(`✅ Usuario respondió "${option}" en step: ${step.id}`);
       userData[step.id] = option;
+
       if (step.followup) {
-        runMessages(step.followup, () => {
+        console.log("📦 Step contiene mensajes de seguimiento. Mostrándolos...");
+        runMessages(step.followup.map(replaceVariables), () => {
           if (step.types) {
             const typeMsgs = step.types.map(type =>
-              { return { gif: null, text: `<b>${type.name}</b>: ${type.description}${type.example ? `<br><i>${type.example}</i>` : ''}` }; });
-            runMessages(typeMsgs.map(t => t.text), goToNext);
+              `<b>${type.name}</b>: ${type.description}${type.example ? `<br><i>${type.example}</i>` : ''}`);
+            runMessages(typeMsgs, goToNext);
           } else {
             goToNext();
           }
@@ -194,8 +227,12 @@ function runStep() {
         goToNext();
       }
     });
+  } else {
+    console.warn(`⚠️ El step "${step.id}" no tiene messages ni question. Se llama goToNext automáticamente.`);
+    goToNext();
   }
 }
+
 
 function appendMessageWithOptions(text, options, onClickHandler) {
   simulateTypingAndRespond(() => {
