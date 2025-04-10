@@ -1,4 +1,4 @@
-// Versión actualizada de chatbot.js para manejar GIFs desde el JSON como objetos
+// Versión limpia de chatbot.js sin mensajes de depuración (console.log)
 
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const flow = phoenixChatbotBaseUrlData.flow.conversation;
@@ -51,12 +51,12 @@ function appendMessage(content, sender, isTemporary = false) {
 
     const textNode = document.createElement("div");
     if (typeof content === "object" && content.gif) {
-  const text = content.text ? replaceVariables(content.text).replace(/\n/g, "<br>") + "<br>" : "";
-  const gif = `<img src="${content.gif}" alt="GIF" style="max-width: 100%; border-radius: 10px;">`;
-  textNode.innerHTML = text + gif;
-} else {
-  textNode.innerHTML = replaceVariables(content).replace(/\n/g, "<br>");
-}
+      const text = content.text ? replaceVariables(content.text).replace(/\n/g, "<br>") + "<br>" : "";
+      const gif = `<img src="${content.gif}" alt="GIF" style="max-width: 100%; border-radius: 10px;">`;
+      textNode.innerHTML = text + gif;
+    } else {
+      textNode.innerHTML = replaceVariables(content).replace(/\n/g, "<br>");
+    }
 
     bubble.appendChild(meta);
     bubble.appendChild(textNode);
@@ -105,7 +105,6 @@ function simulateTypingAndRespond(callback, responseText) {
 function runMessages(messages, callback, index = 0) {
   if (index >= messages.length) return callback();
   const msg = replaceVariables(messages[index]);
-  console.log(`📤 Mostrando mensaje (${index + 1}/${messages.length}):`, msg);
   simulateTypingAndRespond(() => {
     appendMessage(msg, "bot");
     runMessages(messages, callback, index + 1);
@@ -114,7 +113,7 @@ function runMessages(messages, callback, index = 0) {
 
 function nextNode(id) {
   currentNode = getNodeById(id);
-  if (!currentNode) return console.error("❌ Nodo no encontrado:", id);
+  if (!currentNode) return;
 
   if (currentNode.steps) {
     currentSteps = currentNode.steps;
@@ -132,8 +131,7 @@ function nextNode(id) {
         if (currentNode.next) nextNode(currentNode.next);
       }, randomMessage);
     }
-  }
-   else if (currentNode.question && currentNode.options) {
+  } else if (currentNode.question && currentNode.options) {
     appendMessageWithOptions(currentNode.question, currentNode.options, (option) => {
       userData[currentNode.id] = option;
       if (currentNode.next_if && currentNode.next_if[option]) {
@@ -147,69 +145,51 @@ function nextNode(id) {
 
 function runStep() {
   const step = currentSteps[currentStepIndex];
-  if (!step) {
-    console.warn("⚠️ No se encontró el step actual. currentStepIndex:", currentStepIndex);
-    return;
-  }
-
-  console.log(`🔄 Ejecutando runStep para: ${step.id}`);
-  console.log("📌 Detalle del step:", step);
+  if (!step) return;
 
   const goToNext = () => {
-    console.log(`➡️ goToNext ejecutado desde step: ${step.id}`);
     if (step.next) {
       const nextStepIndex = currentSteps.findIndex(s => s.id === step.next);
       if (nextStepIndex !== -1) {
-        console.log(`↪️ Saltando al step: ${step.next}`);
         currentStepIndex = nextStepIndex;
         runStep();
         return;
       } else {
-        console.log(`🔁 step.next no está en currentSteps. Se asume que es un nodo externo: ${step.next}`);
         return nextNode(step.next);
       }
     }
 
     currentStepIndex++;
     if (currentStepIndex < currentSteps.length) {
-      console.log("🔼 Avanzando al siguiente step:", currentSteps[currentStepIndex].id);
       runStep();
     } else if (currentNode.next) {
-      console.log("✅ Todos los steps terminados. Siguiente nodo:", currentNode.next);
       nextNode(currentNode.next);
-    } else {
-      console.log("⛔ Fin del flujo. No hay más pasos ni nodo siguiente.");
     }
   };
 
   if (step.messages) {
-  const messages = step.messages.map(replaceVariables);
+    const messages = step.messages.map(replaceVariables);
 
-  if (step.send_all) {
-    console.log(`📨 Step "${step.id}" tiene send_all: true. Mostrando todos los mensajes...`);
-    runMessages(messages, () => {
-      if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) {
-        goToNext();
-      }
-    });
-  } else {
-    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-    console.log(`📨 Mostrando mensaje aleatorio del step "${step.id}":`, randomMessage);
-    simulateTypingAndRespond(() => {
-      appendMessage(randomMessage, "bot");
-      if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) {
-        goToNext();
-      }
-    }, randomMessage);
-  }
-} else if (step.question && step.options) {
-    console.log(`❓ Step "${step.id}" contiene pregunta y opciones. Mostrando al usuario...`);
+    if (step.send_all) {
+      runMessages(messages, () => {
+        if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) {
+          goToNext();
+        }
+      });
+    } else {
+      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+      simulateTypingAndRespond(() => {
+        appendMessage(randomMessage, "bot");
+        if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) {
+          goToNext();
+        }
+      }, randomMessage);
+    }
+  } else if (step.question && step.options) {
     appendMessageWithOptions(step.question, step.options, (option) => {
-      console.log(`✅ Usuario respondió "${option}" en step: ${step.id}`);
       userData[step.id] = option;
 
       if (step.followup) {
-        console.log("📦 Step contiene mensajes de seguimiento. Mostrándolos...");
         runMessages(step.followup.map(replaceVariables), () => {
           if (step.types) {
             const typeMsgs = step.types.map(type =>
@@ -228,11 +208,9 @@ function runStep() {
       }
     });
   } else {
-    console.warn(`⚠️ El step "${step.id}" no tiene messages ni question. Se llama goToNext automáticamente.`);
     goToNext();
   }
 }
-
 
 function appendMessageWithOptions(text, options, onClickHandler) {
   simulateTypingAndRespond(() => {
