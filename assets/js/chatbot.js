@@ -1,5 +1,3 @@
-// Versión limpia de chatbot.js sin mensajes de depuración (console.log)
-
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
 const flow = phoenixChatbotBaseUrlData.flow.conversation;
 
@@ -46,7 +44,6 @@ function appendMessage(content, sender, isTemporary = false) {
     const timestamp = new Date();
     meta.dataset.timestamp = timestamp.getTime();
     meta.textContent = `${activeAssistant.name} • Hace 1 min`;
-
     botMessageTimes.push({ meta, timestamp });
 
     const textNode = document.createElement("div");
@@ -101,19 +98,35 @@ function simulateTypingAndRespond(callback, responseText) {
     callback();
   }, delay);
 }
-
 function runMessages(messages, callback, index = 0) {
   if (index >= messages.length) return callback();
-  const msg = replaceVariables(messages[index]);
+
+  const rawMsg = messages[index];
+  let processedMsg = rawMsg;
+
+
+  if (typeof rawMsg === 'object' && rawMsg !== null) {
+    if (rawMsg.text) {
+      processedMsg = {
+        text: replaceVariables(rawMsg.text),
+        gif: rawMsg.gif
+      };
+    } else {
+      processedMsg = { gif: rawMsg.gif };
+    }
+  } else if (typeof rawMsg === 'string') {
+    processedMsg = replaceVariables(rawMsg);
+  }
+
+
   simulateTypingAndRespond(() => {
-    appendMessage(msg, "bot");
+    appendMessage(processedMsg, "bot");
     runMessages(messages, callback, index + 1);
-  }, msg);
+  }, typeof processedMsg === 'string' ? processedMsg : (processedMsg.text || ''));
 }
 
 function nextNode(id) {
   currentNode = getNodeById(id);
-  if (!currentNode) return;
 
   if (currentNode.steps) {
     currentSteps = currentNode.steps;
@@ -145,8 +158,9 @@ function nextNode(id) {
 
 function runStep() {
   const step = currentSteps[currentStepIndex];
-  if (!step) return;
-
+  if (!step) {
+    return;
+  }
   const goToNext = () => {
     if (step.next) {
       const nextStepIndex = currentSteps.findIndex(s => s.id === step.next);
@@ -164,25 +178,21 @@ function runStep() {
       runStep();
     } else if (currentNode.next) {
       nextNode(currentNode.next);
+    } else {
     }
   };
 
   if (step.messages) {
     const messages = step.messages.map(replaceVariables);
-
     if (step.send_all) {
       runMessages(messages, () => {
-        if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) {
-          goToNext();
-        }
+        if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) goToNext();
       });
     } else {
       const randomMessage = messages[Math.floor(Math.random() * messages.length)];
       simulateTypingAndRespond(() => {
         appendMessage(randomMessage, "bot");
-        if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) {
-          goToNext();
-        }
+        if (!['ask_name', 'ask_email', 'ask_phone'].includes(step.id)) goToNext();
       }, randomMessage);
     }
   } else if (step.question && step.options) {
@@ -208,6 +218,48 @@ function runStep() {
       }
     });
   } else {
+    goToNext();
+  }
+}
+function handleFreeTextInput(userInput) {
+
+  if (!currentNode || !currentNode.steps) return;
+  const step = currentSteps[currentStepIndex];
+  if (!step) return;
+
+  const goToNext = () => {
+    if (step.next) {
+      const nextStepIndex = currentSteps.findIndex(s => s.id === step.next);
+      if (nextStepIndex !== -1) {
+        currentStepIndex = nextStepIndex;
+        runStep();
+        return;
+      } else {
+        return nextNode(step.next);
+      }
+    }
+    currentStepIndex++;
+    if (currentStepIndex < currentSteps.length) {
+      runStep();
+    } else if (currentNode.next) {
+      nextNode(currentNode.next);
+    }
+  };
+
+  if (step.id === "ask_name") {
+    userData.name = userInput;
+    goToNext();
+  } else if (step.id === "ask_email") {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInput)) {
+      return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
+    }
+    userData.email = userInput;
+    goToNext();
+  } else if (step.id === "ask_phone") {
+    if (!/^[\d\s\+\-\(\)]{7,}$/.test(userInput)) {
+      return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
+    }
+    userData.phone = userInput;
     goToNext();
   }
 }
@@ -265,7 +317,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }, 60000);
 });
-
 function startChat() {
   const hour = new Date().getHours();
   let greetingKey = 'night';
@@ -273,6 +324,10 @@ function startChat() {
   else if (hour >= 12 && hour < 20) greetingKey = 'afternoon';
 
   const greetingNode = getNodeById('greeting');
+  if (!greetingNode) {
+    return;
+  }
+
   const greetingText = greetingNode.messages[greetingKey];
   const options = greetingNode.options;
 
@@ -283,48 +338,6 @@ function startChat() {
       appendMessage("Por favor, selecciona una opción relacionada con nuestros servicios.", "bot");
     }
   });
-}
-
-function handleFreeTextInput(userInput) {
-  if (!currentNode || !currentNode.steps) return;
-  const step = currentSteps[currentStepIndex];
-  if (!step) return;
-
-  const goToNext = () => {
-    if (step.next) {
-      const nextStepIndex = currentSteps.findIndex(s => s.id === step.next);
-      if (nextStepIndex !== -1) {
-        currentStepIndex = nextStepIndex;
-        runStep();
-        return;
-      } else {
-        return nextNode(step.next);
-      }
-    }
-    currentStepIndex++;
-    if (currentStepIndex < currentSteps.length) {
-      runStep();
-    } else if (currentNode.next) {
-      nextNode(currentNode.next);
-    }
-  };
-
-  if (step.id === "ask_name") {
-    userData.name = userInput;
-    goToNext();
-  } else if (step.id === "ask_email") {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInput)) {
-      return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
-    }
-    userData.email = userInput;
-    goToNext();
-  } else if (step.id === "ask_phone") {
-    if (!/^[\d\s\+\-\(\)]{7,}$/.test(userInput)) {
-      return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
-    }
-    userData.phone = userInput;
-    goToNext();
-  }
 }
 
 function formatTimeElapsed(timestamp) {

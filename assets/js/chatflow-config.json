@@ -170,6 +170,7 @@
       },
       {
         "id": "final_closure",
+        "send_all": true,
         "messages": [
           "Gracias por toda la información, {name}. Nuestro equipo de ventas se pondrá en contacto contigo muy pronto.",
           {
