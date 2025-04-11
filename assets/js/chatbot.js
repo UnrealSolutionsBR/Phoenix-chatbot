@@ -376,7 +376,8 @@ document.addEventListener("DOMContentLoaded", function () {
 function formatTimeElapsed(timestamp) {
   const now = new Date();
   const diffMin = Math.floor((now - timestamp) / 60000);
-  if (diffMin < 60) return `Hace ${diffMin <= 0 ? "1 min" : diffMin + " min"}`;
+  if (diffMin < 1) return "Ahora";
+  if (diffMin < 60) return `Hace ${diffMin} min`;
   const diffHr = Math.floor(diffMin / 60);
   if (diffHr < 24) return `Hace ${diffHr === 1 ? "1 hora" : diffHr + " horas"}`;
   const diffDay = Math.floor(diffHr / 24);
