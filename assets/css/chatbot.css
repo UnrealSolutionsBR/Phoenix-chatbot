@@ -17,6 +17,11 @@
   overflow-y: auto;
   padding: 16px;
   background: #02071a;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+}
+.phoenix-chat-messages::-webkit-scrollbar {
+  display: none; /* Chrome, Safari y Opera */
 }
 
 /* ======================

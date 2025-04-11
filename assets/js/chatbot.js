@@ -100,7 +100,7 @@ function appendSystemNotice(text) {
   const notice = document.createElement("div");
   notice.textContent = text;
   notice.style.textAlign = "center";
-  notice.style.color = "#444";
+  notice.style.color = "#7CA7E8";
   notice.style.fontSize = "14px";
   notice.style.margin = "20px 0";
   messages.appendChild(notice);
