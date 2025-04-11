@@ -10,6 +10,7 @@ const phoenixAssistants = [
 ];
 
 const activeAssistant = phoenixAssistants[Math.floor(Math.random() * phoenixAssistants.length)];
+userData.bot_name = activeAssistant.name;
 let botMessageTimes = [];
 let userData = {};
 let currentStepIndex = 0;

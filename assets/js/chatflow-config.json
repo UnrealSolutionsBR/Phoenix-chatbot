@@ -3,9 +3,9 @@
       {
         "id": "greeting",
         "messages": {
-          "morning": "Hola, buen día. Soy Valeria de Unreal Solutions. ¿En qué puedo ayudarte hoy?",
-          "afternoon": "Hola, buenas tardes. Soy Andrés del equipo de Unreal Solutions. ¿Cómo puedo ayudarte hoy?",
-          "night": "Hola, buenas noches. Soy Camila de Unreal Solutions. ¿En qué puedo apoyarte en este momento?"
+          "morning": "Hola, buen día. Soy {bot_name} de Unreal Solutions. ¿En qué puedo ayudarte hoy?",
+          "afternoon": "Hola, buenas tardes. Soy {bot_name} del equipo de Unreal Solutions. ¿Cómo puedo ayudarte hoy?",
+          "night": "Hola, buenas noches. Soy {bot_name} de Unreal Solutions. ¿En qué puedo apoyarte en este momento?"
         },
         "options": [
           "Contratar servicio",
