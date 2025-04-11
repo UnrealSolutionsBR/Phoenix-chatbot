@@ -1,0 +1,87 @@
+/* Estilo general para la interfaz de administración */
+.wrap h1 {
+    margin-bottom: 20px;
+  }
+  
+  /* Tabla de sesiones (ya hereda estilos de WordPress) */
+  table.wp-list-table th,
+  table.wp-list-table td {
+    vertical-align: middle;
+    font-size: 14px;
+  }
+  
+  .wp-list-table .column-cb input {
+    margin-left: 4px;
+  }
+  
+  /* Estilo para la sección de resumen (All, Active, Trash) */
+  .wrap p {
+    font-size: 15px;
+    margin-bottom: 20px;
+  }
+  
+  /* Contenedor principal del chat en vivo */
+  .chatbox-admin {
+    background: #f1f1f1;
+    border: 1px solid #ccc;
+    padding: 15px;
+    height: 400px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+  
+  /* Mensajes individuales */
+  .chatbox-admin .message {
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #fff;
+    border-left: 4px solid #2271b1;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+  }
+  
+  /* Burbujas de mensajes del admin */
+  .chatbox-admin .message strong {
+    display: inline-block;
+    margin-right: 6px;
+    color: #2271b1;
+  }
+  
+  /* Input + botón enviar */
+  .phoenix-chat-input-container {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  
+  .phoenix-chat-input-container input[type="text"] {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+  }
+  
+  .phoenix-chat-input-container button {
+    padding: 10px 16px;
+    font-size: 14px;
+    border: none;
+    background-color: #2271b1;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .phoenix-chat-input-container button:hover {
+    background-color: #135e96;
+  }
+  
+  /* Botón rojo eliminar */
+  .button-secondary[style*="color:red"] {
+    color: #b32d2e !important;
+    border-color: #dc3232 !important;
+    background: #fbeaea !important;
+  }
+  
