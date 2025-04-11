@@ -89,8 +89,25 @@ function appendMessage(content, sender, isTemporary = false) {
   }
 
   messages.appendChild(msgWrapper);
-  messages.scrollTop = messages.scrollHeight;
+  requestAnimationFrame(() => {
+  messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+});
+
   return msgWrapper;
+}
+function appendSystemNotice(text) {
+  const messages = document.getElementById("phoenix-chat-messages");
+  const notice = document.createElement("div");
+  notice.textContent = text;
+  notice.style.textAlign = "center";
+  notice.style.color = "#444";
+  notice.style.fontSize = "14px";
+  notice.style.margin = "20px 0";
+  messages.appendChild(notice);
+
+  requestAnimationFrame(() => {
+    messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+  });
 }
 function simulateTypingAndRespond(callback, responseText) {
   const messages = document.getElementById("phoenix-chat-messages");
@@ -135,9 +152,11 @@ if (lastMessage && lastMessage.classList.contains('bot')) {
   loading.appendChild(avatar);
   loading.appendChild(bubble);
   messages.appendChild(loading);
-  messages.scrollTop = messages.scrollHeight;
+  requestAnimationFrame(() => {
+  messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+});
+  const delay = Math.floor(Math.random() * 4000) + 1000; // entre 1000ms y 5000ms (1s a 5s)
 
-  const delay = Math.min(3000 + (typeof responseText === 'string' ? responseText.length * 25 : 400), 8000);
   setTimeout(() => {
     loading.remove();
     callback();
@@ -320,7 +339,9 @@ function appendMessageWithOptions(text, options, onClickHandler) {
     });
 
     messages.appendChild(buttonRow);
-    messages.scrollTop = messages.scrollHeight;
+    requestAnimationFrame(() => {
+  messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+});
   }, text + options.join(" "));
 }
 
@@ -336,6 +357,9 @@ function startChat() {
   const greetingText = greetingNode.messages[greetingKey];
   const options = greetingNode.options;
 
+  // 🟦 Mensaje del sistema antes de que hable el bot
+  appendSystemNotice(`${activeAssistant.name} se unió al chat`);
+
   appendMessageWithOptions(greetingText, options, (option) => {
     if (option === "Contratar servicio") {
       nextNode(greetingNode.next);
@@ -344,6 +368,7 @@ function startChat() {
     }
   });
 }
+
 document.addEventListener("DOMContentLoaded", function () {
   const input = document.getElementById("phoenix-user-input");
   const sendBtn = document.getElementById("phoenix-send-btn");
