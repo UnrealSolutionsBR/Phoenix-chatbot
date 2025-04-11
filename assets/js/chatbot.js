@@ -17,6 +17,12 @@ let currentStepIndex = 0;
 let currentSteps = [];
 let currentNode = null;
 
+// Crear o recuperar ID de sesión
+let session_id = localStorage.getItem('phoenix_session_id');
+if (!session_id) {
+  session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
+  localStorage.setItem('phoenix_session_id', session_id);
+}
 function getNodeById(id) {
   return flow.find(node => node.id === id);
 }
@@ -25,6 +31,20 @@ function replaceVariables(text) {
   if (typeof text !== 'string') return '';
   return text.replace(/\{(\w+)\}/g, (_, key) => userData[key] || `{${key}}`);
 }
+
+function saveMessageToServer(sender, message) {
+  fetch(phoenixChatbotBaseUrlData.ajaxurl, {
+    method: "POST",
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'phoenix_save_message',
+      session_id: session_id,
+      sender: sender,
+      message: message
+    })
+  });
+}
+
 function appendMessage(content, sender, isTemporary = false) {
   const messages = document.getElementById("phoenix-chat-messages");
   const msgWrapper = document.createElement("div");
@@ -32,7 +52,6 @@ function appendMessage(content, sender, isTemporary = false) {
   if (isTemporary) msgWrapper.classList.add("typing");
 
   if (sender === "bot") {
-    // Crear avatar
     const avatar = document.createElement("img");
     avatar.src = activeAssistant.avatar;
     avatar.alt = activeAssistant.name;
@@ -60,7 +79,7 @@ function appendMessage(content, sender, isTemporary = false) {
     bubble.appendChild(meta);
     bubble.appendChild(textNode);
 
-    // Eliminar avatar solo del último bloque de bot si no hay usuario entre medio
+    // Eliminar avatar de burbujas anteriores
     const allMessages = [...document.querySelectorAll(".phoenix-message")];
     for (let i = allMessages.length - 1; i >= 0; i--) {
       const msg = allMessages[i];
@@ -68,13 +87,13 @@ function appendMessage(content, sender, isTemporary = false) {
       if (msg.classList.contains("bot")) {
         const avatarEl = msg.querySelector(".phoenix-bot-avatar");
         if (avatarEl) {
-  const spacer = document.createElement("div");
-  spacer.style.width = "48px";
-  spacer.style.height = "48px";
-  spacer.style.marginRight = "12px";
-  msg.insertBefore(spacer, msg.children[0]);
-  avatarEl.remove();
-}
+          const spacer = document.createElement("div");
+          spacer.style.width = "48px";
+          spacer.style.height = "48px";
+          spacer.style.marginRight = "12px";
+          msg.insertBefore(spacer, msg.children[0]);
+          avatarEl.remove();
+        }
         break;
       }
     }
@@ -90,8 +109,13 @@ function appendMessage(content, sender, isTemporary = false) {
 
   messages.appendChild(msgWrapper);
   requestAnimationFrame(() => {
-  messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
-});
+    messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+  });
+
+  // Guardar mensaje (si no es temporal)
+  if (!isTemporary) {
+    saveMessageToServer(sender, typeof content === 'string' ? content : (content.text || ''));
+  }
 
   return msgWrapper;
 }
@@ -100,7 +124,7 @@ function appendSystemNotice(text) {
   const notice = document.createElement("div");
   notice.textContent = text;
   notice.style.textAlign = "center";
-  notice.style.color = "#7CA7E8";
+  notice.style.color = "#888";
   notice.style.fontSize = "14px";
   notice.style.margin = "20px 0";
   messages.appendChild(notice);
@@ -109,25 +133,28 @@ function appendSystemNotice(text) {
     messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
   });
 }
+
 function simulateTypingAndRespond(callback, responseText) {
   const messages = document.getElementById("phoenix-chat-messages");
+
   const allMessages = [...document.querySelectorAll(".phoenix-message")];
-for (let i = allMessages.length - 1; i >= 0; i--) {
-  const msg = allMessages[i];
-  if (msg.classList.contains("user")) break;
-  if (msg.classList.contains("bot")) {
-    const avatarEl = msg.querySelector(".phoenix-bot-avatar");
-    if (avatarEl) {
-      const spacer = document.createElement("div");
-      spacer.style.width = "48px";
-      spacer.style.height = "48px";
-      spacer.style.marginRight = "12px";
-      msg.insertBefore(spacer, msg.children[0]);
-      avatarEl.remove();
+  for (let i = allMessages.length - 1; i >= 0; i--) {
+    const msg = allMessages[i];
+    if (msg.classList.contains("user")) break;
+    if (msg.classList.contains("bot")) {
+      const avatarEl = msg.querySelector(".phoenix-bot-avatar");
+      if (avatarEl) {
+        const spacer = document.createElement("div");
+        spacer.style.width = "48px";
+        spacer.style.height = "48px";
+        spacer.style.marginRight = "12px";
+        msg.insertBefore(spacer, msg.children[0]);
+        avatarEl.remove();
+      }
+      break;
     }
-    break;
   }
-}
+
   const loading = document.createElement("div");
   loading.className = "phoenix-message bot typing";
 
@@ -135,13 +162,6 @@ for (let i = allMessages.length - 1; i >= 0; i--) {
   avatar.src = activeAssistant.avatar;
   avatar.alt = activeAssistant.name;
   avatar.className = "phoenix-bot-avatar";
-
-// Verifica si hay otro mensaje de bot justo antes
-const previousMessages = [...document.querySelectorAll('.phoenix-message')];
-const lastMessage = previousMessages[previousMessages.length - 1];
-if (lastMessage && lastMessage.classList.contains('bot')) {
-  avatar.classList.add('slide-down');
-}
 
   const bubble = document.createElement("div");
   bubble.className = "phoenix-message-content phoenix-typing-indicator";
@@ -153,9 +173,10 @@ if (lastMessage && lastMessage.classList.contains('bot')) {
   loading.appendChild(bubble);
   messages.appendChild(loading);
   requestAnimationFrame(() => {
-  messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
-});
-  const delay = Math.floor(Math.random() * 4000) + 1000; // entre 1000ms y 5000ms (1s a 5s)
+    messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+  });
+
+  const delay = Math.floor(Math.random() * 4000) + 1000;
 
   setTimeout(() => {
     loading.remove();
@@ -192,6 +213,7 @@ function runMessages(messages, callback, index = 0) {
     runMessages(messages, callback, index + 1);
   }, typeof processedMsg === 'string' ? processedMsg : (processedMsg.text || ''));
 }
+
 function nextNode(id) {
   currentNode = getNodeById(id);
   if (!currentNode) return;
@@ -275,6 +297,7 @@ function runStep() {
     goToNext();
   }
 }
+
 function handleFreeTextInput(userInput) {
   if (!currentNode || !currentNode.steps) return;
 
@@ -306,8 +329,8 @@ function handleFreeTextInput(userInput) {
     goToNext();
   } else if (step.id === "ask_email") {
     if (!/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(userInput)) {
-    return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
-}
+      return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
+    }
     userData.email = userInput;
     goToNext();
   } else if (step.id === "ask_phone") {
@@ -318,6 +341,7 @@ function handleFreeTextInput(userInput) {
     goToNext();
   }
 }
+
 function appendMessageWithOptions(text, options, onClickHandler) {
   simulateTypingAndRespond(() => {
     if (text) appendMessage(text, "bot");
@@ -340,11 +364,10 @@ function appendMessageWithOptions(text, options, onClickHandler) {
 
     messages.appendChild(buttonRow);
     requestAnimationFrame(() => {
-  messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
-});
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    });
   }, text + options.join(" "));
 }
-
 function startChat() {
   const hour = new Date().getHours();
   let greetingKey = 'night';
@@ -357,16 +380,17 @@ function startChat() {
   const greetingText = greetingNode.messages[greetingKey];
   const options = greetingNode.options;
 
-  // 🟦 Mensaje del sistema antes de que hable el bot
   appendSystemNotice(`${activeAssistant.name} se unió al chat`);
 
-  appendMessageWithOptions(greetingText, options, (option) => {
-    if (option === "Contratar servicio") {
-      nextNode(greetingNode.next);
-    } else {
-      appendMessage("Por favor, selecciona una opción relacionada con nuestros servicios.", "bot");
-    }
-  });
+  setTimeout(() => {
+    appendMessageWithOptions(greetingText, options, (option) => {
+      if (option === "Contratar servicio") {
+        nextNode(greetingNode.next);
+      } else {
+        appendMessage("Por favor, selecciona una opción relacionada con nuestros servicios.", "bot");
+      }
+    });
+  }, 1000);
 }
 
 document.addEventListener("DOMContentLoaded", function () {
