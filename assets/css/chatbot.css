@@ -1,231 +1,248 @@
 /* Contenedor principal del chatbot (100vh y layout en columnas) */
 .phoenix-chatbot-container {
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 0;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    font-family: 'Open Sans', sans-serif;
-    background: #02071a;
-  }
-  
-  /* Área de mensajes que se expande y hace scroll */
-  .phoenix-chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    background: #02071a;
-  }
-  
-  /* ======================
-     Mensaje del bot
-  ========================= */
-  .phoenix-message.bot {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 20px;
-  }
-  
-  .phoenix-bot-avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 50% !important;
-    object-fit: cover;
-    margin-right: 12px;
-    flex-shrink: 0;
-  }
-  
-  .phoenix-message-content {
-    background-color: #D9D9D9;
-    color: #000;
-    padding: 14px 18px;
-    border-radius: 10px 10px 10px 0px;
-    width: auto;
-    max-width: 75%;
-    display: inline-block;
-    word-wrap: break-word;
-    font-size: 15px;
-    line-height: 1.4;
-    animation: phoenix-pop 0.25s ease-out;
-  }
-  
-  .phoenix-message-meta {
-    font-weight: 600;
-    font-size: 14px;
-    margin-bottom: 6px;
-  }
-  
-  .phoenix-message-content > div:not(.phoenix-message-meta) {
-    animation: phoenix-fade-in-left 0.35s ease-out;
-  }
-  
-  /* ======================
-     Mensaje del usuario
-  ========================= */
-  .phoenix-message.user {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 20px;
-  }
-  
-  .phoenix-message-content-user {
-    background-color: #5991FF;
-    color: white;
-    padding: 14px 18px;
-    border-radius: 10px 10px 0px 10px;
-    width: auto;
-    max-width: 75%;
-    text-align: left;
-    display: inline-block;
-    word-wrap: break-word;
-    font-size: 15px;
-    line-height: 1.4;
-    animation: phoenix-pop 0.25s ease-out, phoenix-fade-in-left 0.35s ease-out;
-  }
-  
-  /* ======================
-     Input sticky abajo
-  ========================= */
-  .phoenix-chat-input-container {
-    display: flex;
-    background-color: #fff;
-    padding: 10px;
-    border-top: 1px solid #ccc;
-    position: sticky;
-    bottom: 0;
-    z-index: 1;
-  }
-  
-  .phoenix-chat-input-container input {
-    flex: 1;
-    padding: 14px;
-    border: none;
-    outline: none;
-    font-size: 16px;
-    border-radius: 6px 0 0 6px;
-  }
-  
-  .phoenix-chat-input-container button {
-    padding: 14px 20px;
-    background-color: #3C7EFF;
-    color: white;
-    border: none;
-    cursor: pointer;
-    border-radius: 0 6px 6px 0;
-  }
-  
-  /* ======================
-     Loader pantalla completa
-  ========================= */
-  .phoenix-loader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #02071a;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-  }
-  
-  .phoenix-spinner {
-    width: 50px;
-    height: 50px;
-    border: 6px solid #ffffff33;
-    border-top: 6px solid #ffffff;
-    border-radius: 50%;
-    animation: phoenix-spin 1s linear infinite;
-  }
-  
-  @keyframes phoenix-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
-  /* ======================
-     Botones de opción
-  ========================= */
-  .phoenix-option-buttons {
-    margin-top: 8px;
-    margin-left: 60px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  
-  .phoenix-option-button {
-    background-color: #5991FF;
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 600;
-    font-family: 'Open Sans', sans-serif;
-    transition: background-color 0.2s;
-  }
-  
-  .phoenix-option-button:hover {
-    background-color: #3c7eff;
-  }
-  
-  /* ======================
-     Animaciones UX
-  ========================= */
-  @keyframes phoenix-pop {
-    0% {
-      transform: scale(0.95);
-      opacity: 0;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-  
-  @keyframes phoenix-fade-in-left {
-    0% {
-      opacity: 0;
-      transform: translateX(-10px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-  
-  /* ======================
-     Indicador escribiendo...
-  ========================= */
-  .phoenix-typing-text {
-    display: inline-block;
-    font-style: normal;
-    color: #000;
-    font-size: 15px;
-    line-height: 1.4;
-    min-width: 11ch;
-    text-align: left;
-    white-space: nowrap;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Open Sans', sans-serif;
+  background: #02071a;
 }
-  
-  .phoenix-typing-text::after {
-    content: "Escribiendo.";
-    animation: phoenix-dots 1.2s steps(3, end) infinite;
+
+/* Área de mensajes que se expande y hace scroll */
+.phoenix-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #02071a;
+}
+
+/* ======================
+   Mensaje del bot
+========================= */
+.phoenix-message.bot {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+
+.phoenix-bot-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50% !important;
+  object-fit: cover;
+  margin-right: 12px;
+  margin-bottom: 5px;
+  flex-shrink: 0;
+}
+
+.phoenix-message-content {
+  background-color: #D9D9D9;
+  color: #000;
+  padding: 14px 18px;
+  border-radius: 10px 10px 10px 0px;
+  width: auto;
+  max-width: 75%;
+  display: inline-block;
+  word-wrap: break-word;
+  font-size: 15px;
+  line-height: 1.4;
+  animation: phoenix-pop 0.25s ease-out;
+}
+
+.phoenix-message-meta {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.phoenix-message-content > div:not(.phoenix-message-meta) {
+  animation: phoenix-fade-in-left 0.35s ease-out;
+}
+
+/* ======================
+   Mensaje del usuario
+========================= */
+.phoenix-message.user {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.phoenix-message-content-user {
+  background-color: #5991FF;
+  color: white;
+  padding: 14px 18px;
+  border-radius: 10px 10px 0px 10px;
+  width: auto;
+  max-width: 75%;
+  text-align: left;
+  display: inline-block;
+  word-wrap: break-word;
+  font-size: 15px;
+  line-height: 1.4;
+  animation: phoenix-pop 0.25s ease-out, phoenix-fade-in-left 0.35s ease-out;
+}
+
+/* ======================
+   Input sticky abajo
+========================= */
+.phoenix-chat-input-container {
+  display: flex;
+  background-color: #fff;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+
+.phoenix-chat-input-container input {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  border-radius: 6px 0 0 6px;
+}
+
+.phoenix-chat-input-container button {
+  padding: 14px 20px;
+  background-color: #3C7EFF;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 0 6px 6px 0;
+}
+
+/* ======================
+   Loader pantalla completa
+========================= */
+.phoenix-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #02071a;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.phoenix-spinner {
+  width: 50px;
+  height: 50px;
+  border: 6px solid #ffffff33;
+  border-top: 6px solid #ffffff;
+  border-radius: 50%;
+  animation: phoenix-spin 1s linear infinite;
+}
+
+@keyframes phoenix-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ======================
+   Botones de opción
+========================= */
+.phoenix-option-buttons {
+  margin-top: 8px;
+  margin-left: 60px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.phoenix-option-button {
+  background-color: #5991FF;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: 'Open Sans', sans-serif;
+  transition: background-color 0.2s;
+}
+
+.phoenix-option-button:hover {
+  background-color: #3c7eff;
+}
+
+/* ======================
+   Animaciones UX
+========================= */
+@keyframes phoenix-pop {
+  0% {
+    transform: scale(0.95);
+    opacity: 0;
   }
-  
-  @keyframes phoenix-dots {
-    0% { content: "Escribiendo."; }
-    33% { content: "Escribiendo.."; }
-    66% { content: "Escribiendo..."; }
-    100% { content: "Escribiendo."; }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
-  
-  .phoenix-typing-indicator {
-    opacity: 0.8;
-    animation: phoenix-pop 0.25s ease-out;
+}
+
+@keyframes phoenix-fade-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-10px);
   }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes phoenix-slide-down {
+0% {
+  transform: translateY(-20px);
+  opacity: 0;
+}
+100% {
+  transform: translateY(0);
+  opacity: 1;
+}
+}
+
+.phoenix-bot-avatar.slide-down {
+animation: phoenix-slide-down 0.5s ease;
+}
+/* ======================
+   Indicador escribiendo...
+========================= */
+.phoenix-typing-text {
+  display: inline-block;
+  font-style: normal;
+  color: #000;
+  font-size: 15px;
+  line-height: 1.4;
+  min-width: 11ch;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.phoenix-typing-text::after {
+  content: "Escribiendo.";
+  animation: phoenix-dots 1.2s steps(3, end) infinite;
+}
+
+@keyframes phoenix-dots {
+  0% { content: "Escribiendo."; }
+  33% { content: "Escribiendo.."; }
+  66% { content: "Escribiendo..."; }
+  100% { content: "Escribiendo."; }
+}
+
+.phoenix-typing-indicator {
+  opacity: 0.8;
+  animation: phoenix-pop 0.25s ease-out;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+}

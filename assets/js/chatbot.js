@@ -32,6 +32,7 @@ function appendMessage(content, sender, isTemporary = false) {
   if (isTemporary) msgWrapper.classList.add("typing");
 
   if (sender === "bot") {
+    // Crear avatar
     const avatar = document.createElement("img");
     avatar.src = activeAssistant.avatar;
     avatar.alt = activeAssistant.name;
@@ -58,6 +59,26 @@ function appendMessage(content, sender, isTemporary = false) {
 
     bubble.appendChild(meta);
     bubble.appendChild(textNode);
+
+    // Eliminar avatar solo del último bloque de bot si no hay usuario entre medio
+    const allMessages = [...document.querySelectorAll(".phoenix-message")];
+    for (let i = allMessages.length - 1; i >= 0; i--) {
+      const msg = allMessages[i];
+      if (msg.classList.contains("user")) break;
+      if (msg.classList.contains("bot")) {
+        const avatarEl = msg.querySelector(".phoenix-bot-avatar");
+        if (avatarEl) {
+  const spacer = document.createElement("div");
+  spacer.style.width = "48px";
+  spacer.style.height = "48px";
+  spacer.style.marginRight = "12px";
+  msg.insertBefore(spacer, msg.children[0]);
+  avatarEl.remove();
+}
+        break;
+      }
+    }
+
     msgWrapper.appendChild(avatar);
     msgWrapper.appendChild(bubble);
   } else {
@@ -73,6 +94,23 @@ function appendMessage(content, sender, isTemporary = false) {
 }
 function simulateTypingAndRespond(callback, responseText) {
   const messages = document.getElementById("phoenix-chat-messages");
+  const allMessages = [...document.querySelectorAll(".phoenix-message")];
+for (let i = allMessages.length - 1; i >= 0; i--) {
+  const msg = allMessages[i];
+  if (msg.classList.contains("user")) break;
+  if (msg.classList.contains("bot")) {
+    const avatarEl = msg.querySelector(".phoenix-bot-avatar");
+    if (avatarEl) {
+      const spacer = document.createElement("div");
+      spacer.style.width = "48px";
+      spacer.style.height = "48px";
+      spacer.style.marginRight = "12px";
+      msg.insertBefore(spacer, msg.children[0]);
+      avatarEl.remove();
+    }
+    break;
+  }
+}
   const loading = document.createElement("div");
   loading.className = "phoenix-message bot typing";
 
@@ -80,6 +118,13 @@ function simulateTypingAndRespond(callback, responseText) {
   avatar.src = activeAssistant.avatar;
   avatar.alt = activeAssistant.name;
   avatar.className = "phoenix-bot-avatar";
+
+// Verifica si hay otro mensaje de bot justo antes
+const previousMessages = [...document.querySelectorAll('.phoenix-message')];
+const lastMessage = previousMessages[previousMessages.length - 1];
+if (lastMessage && lastMessage.classList.contains('bot')) {
+  avatar.classList.add('slide-down');
+}
 
   const bubble = document.createElement("div");
   bubble.className = "phoenix-message-content phoenix-typing-indicator";
@@ -241,9 +286,9 @@ function handleFreeTextInput(userInput) {
     userData.name = userInput;
     goToNext();
   } else if (step.id === "ask_email") {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInput)) {
-      return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
-    }
+    if (!/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(userInput)) {
+    return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
+}
     userData.email = userInput;
     goToNext();
   } else if (step.id === "ask_phone") {
