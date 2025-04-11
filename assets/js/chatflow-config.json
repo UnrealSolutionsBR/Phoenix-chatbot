@@ -166,7 +166,10 @@
           "No puedo contratar con ese monto, está fuera de mi presupuesto"
         ],
         "next_if": {
-          "No está tan lejos, pero tengo que hacer cuentas": "web_development_timeline_followup"
+          "No está tan lejos, pero tengo que hacer cuentas": "web_development_timeline_followup",
+          "Está dentro de lo esperado": "final_closure",
+          "Está por encima de lo esperado, pero podemos hablar": "final_closure",
+          "No puedo contratar con ese monto, está fuera de mi presupuesto": "final_closure"
         }
   },
   {
