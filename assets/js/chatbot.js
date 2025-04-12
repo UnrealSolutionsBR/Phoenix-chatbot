@@ -298,7 +298,7 @@ function initPhoenixChat() {
 
                         // Verificar pregunta con opciones
                         if (step?.question && typeof step.question === 'string') {
-                          wasAlreadySent = replaceVariables(step.question) === lastMessage.message;
+                          wasAlreadySent ||= replaceVariables(step.question) === lastMessage.message;
                         }
 
                         if (wasAlreadySent) {
