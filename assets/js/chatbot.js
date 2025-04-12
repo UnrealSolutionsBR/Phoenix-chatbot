@@ -48,23 +48,36 @@ function loadPreviousHistory(session_id, callback) {
     .then(res => res.json())
     .then(res => {
       if (res.success && Array.isArray(res.data)) {
-        res.data.forEach(msg => {
-          appendMessage(msg.message, msg.sender);
+        const messages = res.data;
+
+        // 🧼 LIMPIAR ANTES DE MOSTRAR HISTORIAL
+        document.getElementById("phoenix-chat-messages").innerHTML = '';
+
+        // Ordenar por fecha (por seguridad)
+        messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+        messages.forEach(msg => {
+          appendMessage(msg.message, msg.sender, true, true); // skipHistory + restored
         });
-        callback();
+
+        callback(messages);
       } else {
-        callback();
+        callback([]);
       }
     });
 }
 
-function appendMessage(content, sender, skipHistory = false) {
+function appendMessage(content, sender, skipHistory = false, isRestored = false) {
   const messages = document.getElementById("phoenix-chat-messages");
   const msgWrapper = document.createElement("div");
   msgWrapper.className = "phoenix-message " + sender;
 
   if (skipHistory) {
     msgWrapper.classList.add("phoenix-ignore-history");
+  }
+
+  if (isRestored) {
+    msgWrapper.classList.add("phoenix-restored");
   }
 
   if (sender === "bot") {
@@ -95,7 +108,7 @@ function appendMessage(content, sender, skipHistory = false) {
     bubble.appendChild(meta);
     bubble.appendChild(textNode);
 
-    // Avatar condicional si ya hubo otro mensaje del bot
+    // Eliminar avatar repetido si ya se mostraron mensajes del bot antes
     const allMessages = [...document.querySelectorAll(".phoenix-message")];
     for (let i = allMessages.length - 1; i >= 0; i--) {
       const msg = allMessages[i];
@@ -128,8 +141,8 @@ function appendMessage(content, sender, skipHistory = false) {
     messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
   });
 
-  // ✅ Guardar en historial solo si no se marca para omitir
-  if (!skipHistory) {
+  // ✅ Guardar solo si es un mensaje nuevo (no restaurado ni marcado para omitir)
+  if (!skipHistory && !isRestored) {
     saveMessageToServer(sender, typeof content === 'string' ? content : (content.text || ''));
   }
 
@@ -354,7 +367,6 @@ function initPhoenixChat() {
   }
 }
 
-
 function runMessages(messages, callback, index = 0) {
   if (index >= messages.length) return callback();
 
@@ -419,6 +431,7 @@ function nextNode(id) {
     });
   }
 }
+
 function runStep() {
   const step = currentSteps[currentStepIndex];
   if (!step) return;
