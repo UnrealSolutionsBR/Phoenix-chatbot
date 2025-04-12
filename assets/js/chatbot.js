@@ -252,7 +252,7 @@ function initPhoenixChat() {
             button.className = "phoenix-option-button";
             button.textContent = option;
             button.onclick = function () {
-              const userMsg = appendMessage(option, "user",true);
+              const userMsg = appendMessage(option, "user", true);
               buttonRow.remove();
               msg.remove();
               userMsg.remove();
@@ -279,19 +279,15 @@ function initPhoenixChat() {
 
                       const step = currentSteps[currentStepIndex];
                       const stepKey = step?.id;
+                      const lastMessage = res.data[res.data.length - 1];
 
-                      // Si ya hay valor guardado, evitar repetir el paso
                       if (stepKey && userData[stepKey]) {
-                        // Ya fue respondido, ir al siguiente
+                        // Ya fue respondido, avanzar al siguiente paso
                         currentStepIndex++;
-                      } const lastMessage = res.data[res.data.length - 1];
-
-                      if (lastMessage?.sender === "bot") {
-                        const step = currentSteps[currentStepIndex];
-                    
+                      } else if (lastMessage?.sender === "bot") {
                         let wasAlreadySent = false;
-                    
-                        // 1. Verificar mensajes normales
+
+                        // Verificar mensajes normales
                         if (step?.messages) {
                           wasAlreadySent = step.messages.some(msg => {
                             if (typeof msg === 'string') return msg === lastMessage.message;
@@ -299,17 +295,18 @@ function initPhoenixChat() {
                             return false;
                           });
                         }
-                    
-                        // 2. Verificar si es pregunta con opciones
+
+                        // Verificar pregunta con opciones
                         if (step?.question && typeof step.question === 'string') {
                           wasAlreadySent = replaceVariables(step.question) === lastMessage.message;
                         }
-                    
+
                         if (wasAlreadySent) {
-                          // Ya fue enviado, no repetir. Esperar input del usuario.
+                          // Ya fue enviado, esperar respuesta
                           return;
-                        }                     
+                        }
                       }
+
                       runStep();
                     } else {
                       nextNode(currentNode.id);
