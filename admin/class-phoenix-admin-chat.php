@@ -38,6 +38,19 @@ class Phoenix_Admin_Chat {
     public function render_admin_chat_page() {
         global $wpdb;
         $table = $wpdb->prefix . 'phoenix_history';
+        $selected_session = isset($_GET['session']) ? sanitize_text_field($_GET['session']) : '';
+
+        echo '<div class="wrap"><h1>Monitor de Chat en Vivo</h1>';
+
+        if ( isset($_GET['deleted']) ) {
+            echo '<div class="notice notice-success is-dismissible"><p>Sesiones eliminadas correctamente.</p></div>';
+        }
+
+        if ( $selected_session ) {
+            echo '<div id="phoenix-admin-chat-app" data-session="' . esc_attr($selected_session) . '"></div>';
+            echo '</div>';
+            return;
+        }
 
         $sessions = $wpdb->get_results("
             SELECT session_id, MAX(created_at) as last_message, COUNT(*) as total 
@@ -45,12 +58,6 @@ class Phoenix_Admin_Chat {
             GROUP BY session_id 
             ORDER BY last_message DESC
         ");
-
-        echo '<div class="wrap"><h1>Monitor de Chat en Vivo</h1>';
-
-        if ( isset($_GET['deleted']) ) {
-            echo '<div class="notice notice-success is-dismissible"><p>Sesiones eliminadas correctamente.</p></div>';
-        }
 
         echo '<form method="POST" action="' . admin_url('admin-post.php') . '">';
         echo '<input type="hidden" name="action" value="phoenix_bulk_delete">';
@@ -61,9 +68,10 @@ class Phoenix_Admin_Chat {
               </tr></thead><tbody>';
 
         foreach ( $sessions as $session ) {
+            $session_link = admin_url('admin.php?page=phoenix-admin-chat&session=' . urlencode($session->session_id));
             echo '<tr>';
             echo '<th scope="row" class="check-column"><input type="checkbox" name="session_ids[]" value="' . esc_attr($session->session_id) . '"></th>';
-            echo '<td><strong>' . esc_html($session->session_id) . '</strong></td>';
+            echo '<td><strong><a href="' . esc_url($session_link) . '">' . esc_html($session->session_id) . '</a></strong></td>';
             echo '<td>' . date_i18n('d M Y H:i', strtotime($session->last_message)) . '</td>';
             echo '<td>' . esc_html($session->total) . '</td>';
             echo '</tr>';
