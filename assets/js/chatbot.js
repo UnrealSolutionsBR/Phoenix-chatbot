@@ -582,11 +582,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function formatTimeElapsed(timestamp) {
   const now = new Date();
-  const diffMin = Math.floor((now - timestamp) / 60000);
+  const diffMs = now - timestamp;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+  const diffMonth = Math.floor(diffDay / 30);
+  const diffYear = Math.floor(diffMonth / 12);
+
   if (diffMin < 1) return "Ahora";
   if (diffMin < 60) return `Hace ${diffMin} min`;
-  const diffHr = Math.floor(diffMin / 60);
   if (diffHr < 24) return `Hace ${diffHr === 1 ? "1 hora" : diffHr + " horas"}`;
-  const diffDay = Math.floor(diffHr / 24);
-  return `Hace ${diffDay === 1 ? "1 día" : diffDay + " días"}`;
+  if (diffDay < 30) return `Hace ${diffDay === 1 ? "1 día" : diffDay + " días"}`;
+  if (diffMonth < 12) return `Hace ${diffMonth === 1 ? "1 mes" : diffMonth + " meses"}`;
+  return `Hace ${diffYear === 1 ? "1 año" : diffYear + " años"}`;
 }
