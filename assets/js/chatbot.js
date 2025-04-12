@@ -252,6 +252,8 @@ function initPhoenixChat() {
               const userMsg = appendMessage(option, "user");
               userMsg.classList.add("phoenix-ignore-history");
               buttonRow.remove();
+              msg.remove();
+              userMsg.remove();
 
               if (option === "Reiniciar") {
                 session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
