@@ -232,14 +232,14 @@ function initPhoenixChat() {
       .then(res => res.json())
       .then(res => {
         if (res.success && res.data.length > 0) {
-          // Mostrar mensaje sin guardarlo en historial
+          appendSystemNotice(`${activeAssistant.name} se unió al chat`);
+
           const msg = appendMessage(
             "Hola. Notamos que ya ha iniciado una conversación previamente. ¿Le gustaría continuar o empezar de nuevo?",
             "bot"
           );
           msg.classList.add("phoenix-ignore-history");
 
-          // Mostrar botones sin guardar la opción seleccionada
           const messages = document.getElementById("phoenix-chat-messages");
           const buttonRow = document.createElement("div");
           buttonRow.className = "phoenix-option-buttons";
@@ -253,7 +253,6 @@ function initPhoenixChat() {
               userMsg.classList.add("phoenix-ignore-history");
               buttonRow.remove();
 
-              // Ejecutar acción según opción
               if (option === "Reiniciar") {
                 session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
                 localStorage.setItem('phoenix_session_id', session_id);
@@ -277,6 +276,7 @@ function initPhoenixChat() {
                       const step = currentSteps[currentStepIndex];
                       const stepKey = step?.id;
 
+                      // Si ya hay valor guardado, evitar repetir el paso
                       if (stepKey && userData[stepKey]) {
                         currentStepIndex++;
                       }
@@ -300,14 +300,12 @@ function initPhoenixChat() {
           });
 
         } else {
-          // No hay historial guardado, iniciar sesión nueva
           session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
           localStorage.setItem('phoenix_session_id', session_id);
           startChat();
         }
       });
   } else {
-    // No hay sesión previa, iniciar normalmente
     session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
     localStorage.setItem('phoenix_session_id', session_id);
     startChat();
