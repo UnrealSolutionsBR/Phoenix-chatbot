@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Phoenix Chatbot AI
- * Description: Chatbot AI con múltiples asistentes, saludo dinámico y flujo conversacional basado en JSON. Permite monitoreo por administradores.
+ * Description: Chatbot AI con múltiples asistentes, saludo dinámico, almacenamiento de historial y panel de administración.
  * Version: 1.2
  * Author: Unreal Solutions
  * Plugin URI: https://unrealsolutions.com.br/
@@ -17,11 +17,11 @@ define( 'PHOENIX_CHATBOT_PATH', plugin_dir_path( __FILE__ ) );
 require_once PHOENIX_CHATBOT_PATH . 'includes/class-phoenix-history.php';
 require_once PHOENIX_CHATBOT_PATH . 'admin/class-phoenix-admin-chat.php';
 
-// ▸ Inicializar funcionalidades
-new Phoenix_History();
-new Phoenix_Admin_Chat();
+// ▸ Inicializar funcionalidades (con namespace)
+new \PhoenixChatbotAI\Phoenix_History();
+new \PhoenixChatbotAI\Phoenix_Admin_Chat();
 
-// ▸ Google Fonts
+// ▸ Cargar fuente Open Sans
 add_action('wp_head', function () {
     echo "<link href='https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap' rel='stylesheet'>";
 });
