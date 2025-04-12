@@ -273,6 +273,7 @@ function initPhoenixChat() {
 
                   if (lastNodeId) {
                     currentNode = getNodeById(lastNodeId);
+
                     if (currentNode?.steps) {
                       currentSteps = currentNode.steps;
                       currentStepIndex = isNaN(lastStepIndex) ? 0 : lastStepIndex;
@@ -280,14 +281,12 @@ function initPhoenixChat() {
                       const step = currentSteps[currentStepIndex];
                       const stepKey = step?.id;
                       const lastMessage = res.data[res.data.length - 1];
+                      let wasAlreadySent = false;
 
                       if (stepKey && userData[stepKey]) {
-                        // Ya fue respondido, avanzar al siguiente paso
                         currentStepIndex++;
                       } else if (lastMessage?.sender === "bot") {
-                        let wasAlreadySent = false;
-
-                        // Verificar mensajes normales
+                        // Verificar si mensaje ya fue enviado
                         if (step?.messages) {
                           wasAlreadySent = step.messages.some(msg => {
                             if (typeof msg === 'string') return msg === lastMessage.message;
@@ -296,19 +295,24 @@ function initPhoenixChat() {
                           });
                         }
 
-                        // Verificar pregunta con opciones
                         if (step?.question && typeof step.question === 'string') {
                           wasAlreadySent ||= replaceVariables(step.question) === lastMessage.message;
                         }
 
-                        if (wasAlreadySent) {
-                          // Ya fue enviado, esperar respuesta
-                          return;
-                        }
+                        if (wasAlreadySent) return;
                       }
 
                       runStep();
                     } else {
+                      const lastMessage = res.data[res.data.length - 1];
+                      let wasAlreadySent = false;
+
+                      // Verificar si ya se mostró una pregunta simple con opciones
+                      if (currentNode?.question && currentNode?.options) {
+                        wasAlreadySent = replaceVariables(currentNode.question) === lastMessage.message;
+                        if (wasAlreadySent) return;
+                      }
+
                       nextNode(currentNode.id);
                     }
                   } else {
