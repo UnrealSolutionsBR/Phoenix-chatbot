@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Phoenix Chatbot AI
  * Description: Chatbot AI con múltiples asistentes, saludo dinámico, almacenamiento de historial y panel de administración.
- * Version: 1.2
+ * Version: 1.3.0
  * Author: Unreal Solutions
  * Plugin URI: https://unrealsolutions.com.br/
  */

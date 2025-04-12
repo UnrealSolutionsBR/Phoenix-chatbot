@@ -198,7 +198,7 @@ function simulateTypingAndRespond(callback, responseText) {
 }
 
 function initPhoenixChat() {
-  // 1. Recuperar datos previos del usuario
+  // 1. Restaurar datos del usuario si existen
   const savedData = localStorage.getItem('phoenix_userdata');
   if (savedData) {
     try {
@@ -208,13 +208,29 @@ function initPhoenixChat() {
     }
   }
 
-  // 2. Si existe una sesión previa
+  // 2. Restaurar asistente activo o asignar uno si no hay
+  const storedAssistant = localStorage.getItem('phoenix_assistant');
+  if (storedAssistant) {
+    try {
+      activeAssistant = JSON.parse(storedAssistant);
+    } catch (e) {
+      activeAssistant = null;
+    }
+  }
+
+  if (!activeAssistant) {
+    activeAssistant = phoenixAssistants[Math.floor(Math.random() * phoenixAssistants.length)];
+    localStorage.setItem('phoenix_assistant', JSON.stringify(activeAssistant));
+  }
+
+  userData.bot_name = activeAssistant.name;
+
+  // 3. Verificar si hay una sesión previa con historial
   if (last_chat_session) {
     fetch(`${phoenixChatbotBaseUrlData.ajaxurl}?action=phoenix_get_messages&session_id=${last_chat_session}`)
       .then(res => res.json())
       .then(res => {
         if (res.success && res.data.length > 0) {
-          // Mostrar mensaje de opción al usuario
           appendMessageWithOptions(
             "Hola. Notamos que ya ha iniciado una conversación previamente. ¿Le gustaría continuar o empezar de nuevo?",
             ["Reiniciar", "Continuar"],
@@ -228,9 +244,10 @@ function initPhoenixChat() {
                 localStorage.removeItem('phoenix_last_node');
                 localStorage.removeItem('phoenix_last_step_index');
                 localStorage.removeItem('phoenix_userdata');
+                localStorage.removeItem('phoenix_assistant'); // reset assistant
                 startChat();
               } else {
-                // Continuar conversación
+                // Continuar sesión previa
                 session_id = last_chat_session;
                 loadPreviousHistory(session_id, () => {
                   const lastNodeId = localStorage.getItem('phoenix_last_node');
@@ -245,7 +262,6 @@ function initPhoenixChat() {
                       const step = currentSteps[currentStepIndex];
                       const stepKey = step?.id;
 
-                      // Si el paso ya fue respondido (según userData), saltamos al siguiente
                       if (stepKey && userData[stepKey]) {
                         currentStepIndex++;
                       }
@@ -269,12 +285,13 @@ function initPhoenixChat() {
         }
       });
   } else {
-    // Primera visita
+    // No hay sesión previa, iniciar normalmente
     session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
     localStorage.setItem('phoenix_session_id', session_id);
     startChat();
   }
 }
+
 
 function runMessages(messages, callback, index = 0) {
   if (index >= messages.length) return callback();
