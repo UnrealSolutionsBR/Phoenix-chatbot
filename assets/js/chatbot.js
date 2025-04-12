@@ -307,10 +307,22 @@ function initPhoenixChat() {
                       const lastMessage = res.data[res.data.length - 1];
                       let wasAlreadySent = false;
 
-                      // Verificar si ya se mostró una pregunta simple con opciones
                       if (currentNode?.question && currentNode?.options) {
                         wasAlreadySent = replaceVariables(currentNode.question) === lastMessage.message;
-                        if (wasAlreadySent) return;
+
+                        if (wasAlreadySent) {
+                          // Mostrar solo las opciones sin repetir la pregunta
+                          appendMessageWithOptions(null, currentNode.options, (option) => {
+                            userData[currentNode.id] = option;
+                            localStorage.setItem('phoenix_userdata', JSON.stringify(userData));
+                            if (currentNode.next_if && currentNode.next_if[option]) {
+                              nextNode(currentNode.next_if[option]);
+                            } else {
+                              nextNode(currentNode.next);
+                            }
+                          });
+                          return;
+                        }
                       }
 
                       nextNode(currentNode.id);
@@ -341,6 +353,7 @@ function initPhoenixChat() {
     startChat();
   }
 }
+
 
 function runMessages(messages, callback, index = 0) {
   if (index >= messages.length) return callback();
