@@ -203,12 +203,33 @@ function initPhoenixChat() {
       "Hola. Notamos que ya ha iniciado una conversación previamente. ¿Le gustaría continuar o empezar de nuevo?",
       ["Reiniciar", "Continuar"],
       (choice) => {
+        const chatBox = document.getElementById("phoenix-chat-messages");
+        chatBox.innerHTML = "";
+
         if (choice === "Reiniciar") {
           session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
           localStorage.setItem('phoenix_session_id', session_id);
+          localStorage.removeItem('phoenix_last_node');
+          localStorage.removeItem('phoenix_last_step_index');
           startChat();
         } else {
-          loadPreviousHistory(session_id, startChat);
+          loadPreviousHistory(session_id, () => {
+            const lastNodeId = localStorage.getItem('phoenix_last_node');
+            const lastStepIndex = parseInt(localStorage.getItem('phoenix_last_step_index'), 10);
+
+            if (lastNodeId) {
+              currentNode = getNodeById(lastNodeId);
+              if (currentNode?.steps) {
+                currentSteps = currentNode.steps;
+                currentStepIndex = isNaN(lastStepIndex) ? 0 : lastStepIndex;
+                runStep();
+              } else {
+                nextNode(currentNode.id);
+              }
+            } else {
+              startChat();
+            }
+          });
         }
       }
     );
@@ -253,6 +274,9 @@ function nextNode(id) {
   currentNode = getNodeById(id);
   if (!currentNode) return;
 
+  localStorage.setItem('phoenix_last_node', currentNode?.id || '');
+  localStorage.setItem('phoenix_last_step_index', currentStepIndex);
+
   if (currentNode.steps) {
     currentSteps = currentNode.steps;
     currentStepIndex = 0;
@@ -283,6 +307,9 @@ function nextNode(id) {
 function runStep() {
   const step = currentSteps[currentStepIndex];
   if (!step) return;
+
+  localStorage.setItem('phoenix_last_node', currentNode?.id || '');
+  localStorage.setItem('phoenix_last_step_index', currentStepIndex);
 
   const goToNext = () => {
     if (step.next) {
