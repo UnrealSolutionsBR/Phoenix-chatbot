@@ -198,42 +198,78 @@ function simulateTypingAndRespond(callback, responseText) {
 }
 
 function initPhoenixChat() {
-  if (last_chat_session) {
-    appendMessageWithOptions(
-      "Hola. Notamos que ya ha iniciado una conversación previamente. ¿Le gustaría continuar o empezar de nuevo?",
-      ["Reiniciar", "Continuar"],
-      (choice) => {
-        const chatBox = document.getElementById("phoenix-chat-messages");
-        chatBox.innerHTML = "";
+  // 1. Recuperar datos previos del usuario
+  const savedData = localStorage.getItem('phoenix_userdata');
+  if (savedData) {
+    try {
+      userData = JSON.parse(savedData);
+    } catch (e) {
+      userData = {};
+    }
+  }
 
-        if (choice === "Reiniciar") {
+  // 2. Si existe una sesión previa
+  if (last_chat_session) {
+    fetch(`${phoenixChatbotBaseUrlData.ajaxurl}?action=phoenix_get_messages&session_id=${last_chat_session}`)
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && res.data.length > 0) {
+          // Mostrar mensaje de opción al usuario
+          appendMessageWithOptions(
+            "Hola. Notamos que ya ha iniciado una conversación previamente. ¿Le gustaría continuar o empezar de nuevo?",
+            ["Reiniciar", "Continuar"],
+            (choice) => {
+              const chatBox = document.getElementById("phoenix-chat-messages");
+              chatBox.innerHTML = "";
+
+              if (choice === "Reiniciar") {
+                session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
+                localStorage.setItem('phoenix_session_id', session_id);
+                localStorage.removeItem('phoenix_last_node');
+                localStorage.removeItem('phoenix_last_step_index');
+                localStorage.removeItem('phoenix_userdata');
+                startChat();
+              } else {
+                // Continuar conversación
+                session_id = last_chat_session;
+                loadPreviousHistory(session_id, () => {
+                  const lastNodeId = localStorage.getItem('phoenix_last_node');
+                  const lastStepIndex = parseInt(localStorage.getItem('phoenix_last_step_index'), 10);
+
+                  if (lastNodeId) {
+                    currentNode = getNodeById(lastNodeId);
+                    if (currentNode?.steps) {
+                      currentSteps = currentNode.steps;
+                      currentStepIndex = isNaN(lastStepIndex) ? 0 : lastStepIndex;
+
+                      const step = currentSteps[currentStepIndex];
+                      const stepKey = step?.id;
+
+                      // Si el paso ya fue respondido (según userData), saltamos al siguiente
+                      if (stepKey && userData[stepKey]) {
+                        currentStepIndex++;
+                      }
+
+                      runStep();
+                    } else {
+                      nextNode(currentNode.id);
+                    }
+                  } else {
+                    startChat();
+                  }
+                });
+              }
+            }
+          );
+        } else {
+          // No hay historial guardado, iniciar sesión nueva
           session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
           localStorage.setItem('phoenix_session_id', session_id);
-          localStorage.removeItem('phoenix_last_node');
-          localStorage.removeItem('phoenix_last_step_index');
           startChat();
-        } else {
-          loadPreviousHistory(session_id, () => {
-            const lastNodeId = localStorage.getItem('phoenix_last_node');
-            const lastStepIndex = parseInt(localStorage.getItem('phoenix_last_step_index'), 10);
-
-            if (lastNodeId) {
-              currentNode = getNodeById(lastNodeId);
-              if (currentNode?.steps) {
-                currentSteps = currentNode.steps;
-                currentStepIndex = isNaN(lastStepIndex) ? 0 : lastStepIndex;
-                runStep();
-              } else {
-                nextNode(currentNode.id);
-              }
-            } else {
-              startChat();
-            }
-          });
         }
-      }
-    );
+      });
   } else {
+    // Primera visita
     session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
     localStorage.setItem('phoenix_session_id', session_id);
     startChat();
@@ -388,18 +424,21 @@ function handleFreeTextInput(userInput) {
 
   if (step.id === "ask_name") {
     userData.name = userInput;
+    localStorage.setItem('phoenix_userdata', JSON.stringify(userData));
     goToNext();
   } else if (step.id === "ask_email") {
     if (!/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(userInput)) {
       return appendMessage("Ese correo no parece válido. ¿Podrías revisarlo?", "bot");
     }
     userData.email = userInput;
+    localStorage.setItem('phoenix_userdata', JSON.stringify(userData));
     goToNext();
   } else if (step.id === "ask_phone") {
     if (!/^\d{7,}$/.test(userInput)) {
       return appendMessage("Ese número no parece válido. Intenta escribirlo nuevamente, por favor.", "bot");
     }
     userData.phone = userInput;
+    localStorage.setItem('phoenix_userdata', JSON.stringify(userData));
     goToNext();
   }
 }
