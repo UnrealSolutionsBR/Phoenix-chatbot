@@ -312,7 +312,7 @@ function initPhoenixChat() {
 
                         if (wasAlreadySent) {
                           // Mostrar solo las opciones sin repetir la pregunta
-                          appendMessageWithOptions(null, currentNode.options, (option) => {
+                          appendOptionsDirect(null, currentNode.options, (option) => {
                             userData[currentNode.id] = option;
                             localStorage.setItem('phoenix_userdata', JSON.stringify(userData));
                             if (currentNode.next_if && currentNode.next_if[option]) {
@@ -320,7 +320,7 @@ function initPhoenixChat() {
                             } else {
                               nextNode(currentNode.next);
                             }
-                          });
+                          });                          
                           return;
                         }
                       }
@@ -548,6 +548,38 @@ function appendMessageWithOptions(text, options, onClickHandler) {
     });
   }, text + options.join(" "));
 }
+
+function appendOptionsDirect(questionText, options, onClickHandler) {
+  if (questionText) appendMessage(questionText, "bot");
+
+  const messages = document.getElementById("phoenix-chat-messages");
+  const buttonRow = document.createElement("div");
+  buttonRow.className = "phoenix-option-buttons";
+
+  options.forEach((option) => {
+    const button = document.createElement("button");
+    button.className = "phoenix-option-button";
+    button.textContent = option;
+    button.onclick = function () {
+      appendMessage(option, "user");
+
+      if (currentNode?.id) {
+        userData[currentNode.id] = option;
+        localStorage.setItem('phoenix_userdata', JSON.stringify(userData));
+      }
+
+      buttonRow.remove();
+      onClickHandler(option);
+    };
+    buttonRow.appendChild(button);
+  });
+
+  messages.appendChild(buttonRow);
+  requestAnimationFrame(() => {
+    messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+  });
+}
+
 function startChat() {
   const hour = new Date().getHours();
   let greetingKey = 'night';
