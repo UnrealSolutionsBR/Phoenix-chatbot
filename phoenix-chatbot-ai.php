@@ -33,7 +33,18 @@ add_action('wp_enqueue_scripts', function () {
         wp_enqueue_style( 'phoenix-chatbot-style', PHOENIX_CHATBOT_URL . 'assets/css/chatbot.css', [], PHOENIX_CHATBOT_VERSION );
         wp_enqueue_script( 'phoenix-chatbot', PHOENIX_CHATBOT_URL . 'assets/js/chatbot.js', [], PHOENIX_CHATBOT_VERSION, true );
 
-        $chatflow = json_decode( file_get_contents( PHOENIX_CHATBOT_PATH . 'chatflow-config.json' ), true );
+        // Cargar y validar el archivo JSON
+        $chatflow = [];
+        $flow_path = PHOENIX_CHATBOT_PATH . 'chatflow-config.json';
+
+        if ( file_exists($flow_path) && is_readable($flow_path) ) {
+            $json_string = file_get_contents($flow_path);
+            $chatflow = json_decode($json_string, true);
+        }
+
+        if ( ! is_array($chatflow) || ! isset($chatflow['conversation']) ) {
+            $chatflow = ['conversation' => []];
+        }
 
         wp_localize_script( 'phoenix-chatbot', 'phoenixChatbotBaseUrlData', [
             'baseUrl' => PHOENIX_CHATBOT_URL,
