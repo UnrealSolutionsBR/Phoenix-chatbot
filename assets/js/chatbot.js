@@ -19,10 +19,8 @@ let currentNode = null;
 
 // Crear o recuperar ID de sesión
 let session_id = localStorage.getItem('phoenix_session_id');
-if (!session_id) {
-  session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
-  localStorage.setItem('phoenix_session_id', session_id);
-}
+const last_chat_session = session_id; // <- Esta variable se usará para saber si hay una sesión previa
+
 function getNodeById(id) {
   return flow.find(node => node.id === id);
 }
@@ -43,6 +41,21 @@ function saveMessageToServer(sender, message) {
       message: message
     })
   });
+}
+
+function loadPreviousHistory(session_id, callback) {
+  fetch(`${phoenixChatbotBaseUrlData.ajaxurl}?action=phoenix_get_messages&session_id=${session_id}`)
+    .then(res => res.json())
+    .then(res => {
+      if (res.success && Array.isArray(res.data)) {
+        res.data.forEach(msg => {
+          appendMessage(msg.message, msg.sender);
+        });
+        callback();
+      } else {
+        callback();
+      }
+    });
 }
 
 function appendMessage(content, sender, isTemporary = false) {
@@ -182,6 +195,28 @@ function simulateTypingAndRespond(callback, responseText) {
     loading.remove();
     callback();
   }, delay);
+}
+
+function initPhoenixChat() {
+  if (last_chat_session) {
+    appendMessageWithOptions(
+      "Hola. Notamos que ya ha iniciado una conversación previamente. ¿Le gustaría continuar o empezar de nuevo?",
+      ["Reiniciar", "Continuar"],
+      (choice) => {
+        if (choice === "Reiniciar") {
+          session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
+          localStorage.setItem('phoenix_session_id', session_id);
+          startChat();
+        } else {
+          loadPreviousHistory(session_id, startChat);
+        }
+      }
+    );
+  } else {
+    session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
+    localStorage.setItem('phoenix_session_id', session_id);
+    startChat();
+  }
 }
 
 function runMessages(messages, callback, index = 0) {
@@ -412,7 +447,7 @@ document.addEventListener("DOMContentLoaded", function () {
   setTimeout(() => {
     document.getElementById("phoenix-loader").style.display = "none";
     document.querySelector(".phoenix-chatbot-container").style.display = "flex";
-    startChat();
+    initPhoenixChat();
   }, 1000);
 
   setInterval(() => {
