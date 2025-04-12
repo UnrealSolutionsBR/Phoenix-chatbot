@@ -284,24 +284,32 @@ function initPhoenixChat() {
                       if (stepKey && userData[stepKey]) {
                         // Ya fue respondido, ir al siguiente
                         currentStepIndex++;
-                      } else {
-                        // Revisión extra: si el último mensaje ya fue enviado por el bot, no lo repitas
-                        const lastMessage = res.data[res.data.length - 1];
-                        if (lastMessage?.sender === "bot") {
-                          const stepMessages = currentSteps[currentStepIndex]?.messages || [];
-                          const wasAlreadySent = stepMessages.some(msg => {
+                      } const lastMessage = res.data[res.data.length - 1];
+
+                      if (lastMessage?.sender === "bot") {
+                        const step = currentSteps[currentStepIndex];
+                    
+                        let wasAlreadySent = false;
+                    
+                        // 1. Verificar mensajes normales
+                        if (step?.messages) {
+                          wasAlreadySent = step.messages.some(msg => {
                             if (typeof msg === 'string') return msg === lastMessage.message;
                             if (typeof msg === 'object' && msg.text) return replaceVariables(msg.text) === lastMessage.message;
                             return false;
                           });
-                      
-                          if (wasAlreadySent) {
-                            // Esperar respuesta del usuario, no repetir el mensaje
-                            return;
-                          }
                         }
-                      }                      
-
+                    
+                        // 2. Verificar si es pregunta con opciones
+                        if (step?.question && typeof step.question === 'string') {
+                          wasAlreadySent = replaceVariables(step.question) === lastMessage.message;
+                        }
+                    
+                        if (wasAlreadySent) {
+                          // Ya fue enviado, no repetir. Esperar input del usuario.
+                          return;
+                        }                     
+                      }
                       runStep();
                     } else {
                       nextNode(currentNode.id);
