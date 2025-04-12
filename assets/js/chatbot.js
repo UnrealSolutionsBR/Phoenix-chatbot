@@ -58,11 +58,14 @@ function loadPreviousHistory(session_id, callback) {
     });
 }
 
-function appendMessage(content, sender, isTemporary = false) {
+function appendMessage(content, sender, skipHistory = false) {
   const messages = document.getElementById("phoenix-chat-messages");
   const msgWrapper = document.createElement("div");
   msgWrapper.className = "phoenix-message " + sender;
-  if (isTemporary) msgWrapper.classList.add("typing");
+
+  if (skipHistory) {
+    msgWrapper.classList.add("phoenix-ignore-history");
+  }
 
   if (sender === "bot") {
     const avatar = document.createElement("img");
@@ -92,7 +95,7 @@ function appendMessage(content, sender, isTemporary = false) {
     bubble.appendChild(meta);
     bubble.appendChild(textNode);
 
-    // Eliminar avatar anterior si hay múltiples mensajes seguidos del bot
+    // Avatar condicional si ya hubo otro mensaje del bot
     const allMessages = [...document.querySelectorAll(".phoenix-message")];
     for (let i = allMessages.length - 1; i >= 0; i--) {
       const msg = allMessages[i];
@@ -125,8 +128,8 @@ function appendMessage(content, sender, isTemporary = false) {
     messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
   });
 
-  // ✅ Guardar solo si no es temporal y no está marcado para ignorar historial
-  if (!isTemporary && !msgWrapper.classList.contains('phoenix-ignore-history')) {
+  // ✅ Guardar en historial solo si no se marca para omitir
+  if (!skipHistory) {
     saveMessageToServer(sender, typeof content === 'string' ? content : (content.text || ''));
   }
 
@@ -236,9 +239,9 @@ function initPhoenixChat() {
 
           const msg = appendMessage(
             "Hola. Notamos que ya ha iniciado una conversación previamente. ¿Le gustaría continuar o empezar de nuevo?",
-            "bot"
+            "bot",
+            true
           );
-          msg.classList.add("phoenix-ignore-history");
 
           const messages = document.getElementById("phoenix-chat-messages");
           const buttonRow = document.createElement("div");
@@ -249,8 +252,7 @@ function initPhoenixChat() {
             button.className = "phoenix-option-button";
             button.textContent = option;
             button.onclick = function () {
-              const userMsg = appendMessage(option, "user");
-              userMsg.classList.add("phoenix-ignore-history");
+              const userMsg = appendMessage(option, "user",true);
               buttonRow.remove();
               msg.remove();
               userMsg.remove();
