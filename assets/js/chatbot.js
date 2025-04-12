@@ -1,5 +1,5 @@
 const phoenixChatbotBaseUrl = phoenixChatbotBaseUrlData.baseUrl;
-const flow = phoenixChatbotBaseUrlData.flow.conversation;
+const flow = (phoenixChatbotBaseUrlData.flow && phoenixChatbotBaseUrlData.flow.conversation) || [];
 
 const phoenixAssistants = [
   { name: "Valeria", avatar: phoenixChatbotBaseUrl + "assets/img/Valeria.png" },
