@@ -1,6 +1,11 @@
 document.addEventListener("DOMContentLoaded", function () {
+  console.log("Phoenix admin JS cargado ✅");
+
   const app = document.getElementById("phoenix-admin-chat-app");
   const selectedSession = app?.dataset?.session || null;
+
+  console.log("Elemento app:", app);
+  console.log("selectedSession:", selectedSession);
 
   const sessionContainer = document.createElement("div");
   sessionContainer.id = "phoenix-sessions";
@@ -19,11 +24,12 @@ document.addEventListener("DOMContentLoaded", function () {
   let lastTimestamp = null;
   let pollingInterval = null;
 
-  // 🔁 Cargar sesiones activas si no hay una preseleccionada
   if (!selectedSession) {
+    console.log("Modo normal: cargando lista de sesiones");
     fetch(`${PhoenixChatMonitorData.ajaxurl}?action=phoenix_get_sessions`)
       .then(res => res.json())
       .then(res => {
+        console.log("Sesiones recibidas:", res);
         if (res.success && Array.isArray(res.data)) {
           res.data.forEach(session => {
             const btn = document.createElement("button");
@@ -35,14 +41,16 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       });
   } else {
+    console.log("Modo directo: cargando sesión", selectedSession);
     loadSession(selectedSession);
   }
 
-  // 📥 Cargar historial de sesión y activar polling
   function loadSession(sessionId) {
+    console.log("Llamando loadSession:", sessionId);
     currentSession = sessionId;
     lastTimestamp = null;
     clearInterval(pollingInterval);
+    chatContainer.innerHTML = '';
 
     chatContainer.innerHTML = `
       <div style="margin-bottom: 16px;">
@@ -58,19 +66,28 @@ document.addEventListener("DOMContentLoaded", function () {
     fetch(`${PhoenixChatMonitorData.ajaxurl}?action=phoenix_get_messages&session_id=${sessionId}`)
       .then(res => res.json())
       .then(res => {
+        console.log("Respuesta de phoenix_get_messages:", res);
         if (res.success && Array.isArray(res.data)) {
           const log = document.getElementById("chat-log");
+          if (!log) {
+            console.warn("❌ No se encontró #chat-log");
+            return;
+          }
+
           log.innerHTML = '';
           res.data.forEach(msg => {
             appendMessageToChat(msg.sender, msg.message);
             lastTimestamp = msg.created_at;
           });
+        } else {
+          console.warn("No se pudo obtener historial de mensajes");
         }
       });
 
-    // Evento de envío
-    document.getElementById("send-admin-msg").onclick = () => {
-      const input = document.getElementById("admin-input");
+    const sendBtn = document.getElementById("send-admin-msg");
+    const input = document.getElementById("admin-input");
+
+    sendBtn.onclick = () => {
       const message = input.value.trim();
       if (!message) return;
 
@@ -89,11 +106,9 @@ document.addEventListener("DOMContentLoaded", function () {
       input.value = '';
     };
 
-    // Activar polling cada 3 segundos
     pollingInterval = setInterval(pollForNewMessages, 3000);
   }
 
-  // 🔍 Polling para nuevos mensajes
   function pollForNewMessages() {
     if (!currentSession) return;
 
@@ -114,9 +129,13 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
-  // 🧱 Mostrar mensaje en el chat
   function appendMessageToChat(sender, message) {
     const log = document.getElementById("chat-log");
+    if (!log) {
+      console.warn("No se encontró el contenedor del historial");
+      return;
+    }
+
     const div = document.createElement("div");
     div.style.margin = "5px 0";
     div.innerHTML = `<strong>${sender}:</strong> ${message}`;
