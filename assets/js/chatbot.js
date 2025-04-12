@@ -92,7 +92,7 @@ function appendMessage(content, sender, isTemporary = false) {
     bubble.appendChild(meta);
     bubble.appendChild(textNode);
 
-    // Eliminar avatar de burbujas anteriores
+    // Eliminar avatar anterior si hay múltiples mensajes seguidos del bot
     const allMessages = [...document.querySelectorAll(".phoenix-message")];
     for (let i = allMessages.length - 1; i >= 0; i--) {
       const msg = allMessages[i];
@@ -125,13 +125,14 @@ function appendMessage(content, sender, isTemporary = false) {
     messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
   });
 
-  // Guardar mensaje (si no es temporal)
-  if (!isTemporary) {
+  // ✅ Guardar solo si no es temporal y no está marcado para ignorar historial
+  if (!isTemporary && !msgWrapper.classList.contains('phoenix-ignore-history')) {
     saveMessageToServer(sender, typeof content === 'string' ? content : (content.text || ''));
   }
 
   return msgWrapper;
 }
+
 function appendSystemNotice(text) {
   const messages = document.getElementById("phoenix-chat-messages");
   const notice = document.createElement("div");
@@ -231,23 +232,37 @@ function initPhoenixChat() {
       .then(res => res.json())
       .then(res => {
         if (res.success && res.data.length > 0) {
-          appendMessageWithOptions(
+          // Mostrar mensaje sin guardarlo en historial
+          const msg = appendMessage(
             "Hola. Notamos que ya ha iniciado una conversación previamente. ¿Le gustaría continuar o empezar de nuevo?",
-            ["Reiniciar", "Continuar"],
-            (choice) => {
-              const chatBox = document.getElementById("phoenix-chat-messages");
-              chatBox.innerHTML = "";
+            "bot"
+          );
+          msg.classList.add("phoenix-ignore-history");
 
-              if (choice === "Reiniciar") {
+          // Mostrar botones sin guardar la opción seleccionada
+          const messages = document.getElementById("phoenix-chat-messages");
+          const buttonRow = document.createElement("div");
+          buttonRow.className = "phoenix-option-buttons";
+
+          ["Reiniciar", "Continuar"].forEach((option) => {
+            const button = document.createElement("button");
+            button.className = "phoenix-option-button";
+            button.textContent = option;
+            button.onclick = function () {
+              const userMsg = appendMessage(option, "user");
+              userMsg.classList.add("phoenix-ignore-history");
+              buttonRow.remove();
+
+              // Ejecutar acción según opción
+              if (option === "Reiniciar") {
                 session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
                 localStorage.setItem('phoenix_session_id', session_id);
                 localStorage.removeItem('phoenix_last_node');
                 localStorage.removeItem('phoenix_last_step_index');
                 localStorage.removeItem('phoenix_userdata');
-                localStorage.removeItem('phoenix_assistant'); // reset assistant
+                localStorage.removeItem('phoenix_assistant');
                 startChat();
               } else {
-                // Continuar sesión previa
                 session_id = last_chat_session;
                 loadPreviousHistory(session_id, () => {
                   const lastNodeId = localStorage.getItem('phoenix_last_node');
@@ -275,8 +290,15 @@ function initPhoenixChat() {
                   }
                 });
               }
-            }
-          );
+            };
+            buttonRow.appendChild(button);
+          });
+
+          messages.appendChild(buttonRow);
+          requestAnimationFrame(() => {
+            messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+          });
+
         } else {
           // No hay historial guardado, iniciar sesión nueva
           session_id = 'sess_' + Math.random().toString(36).substring(2, 12);
@@ -291,7 +313,6 @@ function initPhoenixChat() {
     startChat();
   }
 }
-
 
 function runMessages(messages, callback, index = 0) {
   if (index >= messages.length) return callback();
