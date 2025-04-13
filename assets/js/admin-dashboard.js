@@ -8,29 +8,23 @@ document.addEventListener('DOMContentLoaded', () => {
   
         if (confirm('¿Estás seguro de que quieres eliminar este chat? Esta acción no se puede deshacer.')) {
   
-          const formData = new FormData();
-          formData.append('action', 'phoenix_bulk_delete');
-          formData.append('session_ids[]', sessionId);
-  
-          console.log('Enviando eliminación AJAX para', sessionId);
-          console.log('Ajax URL:', phoenixAdminDashboard.ajaxurl);
-  
-          fetch(phoenixAdminDashboard.ajaxurl, {
-            method: 'POST',
-            body: formData
-          })
-          .then(res => res.json())
-          .then(response => {
-            if (response.success) {
-              row.remove();
-              showToast('Chat eliminado con éxito');
-            } else {
-              alert('Error al eliminar el chat.');
-            }
-          })
-          .catch(() => {
-            alert('Ocurrió un error inesperado al procesar la eliminación.');
-          });
+            const formData = new FormData();
+            formData.append('action', 'phoenix_bulk_delete');
+            formData.append('session_ids[]', sessionId);
+            
+            fetch(phoenixAdminDashboard.ajaxurl, {
+              method: 'POST',
+              body: formData
+            })
+            .then(res => res.json())
+            .then(response => {
+              if (response.success) {
+                row.remove();
+                showToast('Chat eliminado con éxito');
+              } else {
+                alert('Error al eliminar el chat.');
+              }
+            });            
         }
       });
     });
