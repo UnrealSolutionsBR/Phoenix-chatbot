@@ -282,18 +282,21 @@ function initPhoenixChat() {
                 session_id = last_chat_session;
                 loadPreviousHistory(session_id, (messages) => {
                   // Detectar si un admin tomó el control
-                  const adminTookControl = messages.some(msg =>
+                  const adminJoinMsg = messages.find(msg =>
                     msg.sender === 'admin' &&
                     typeof msg.message === 'string' &&
                     msg.message.includes('se unió al chat')
                   );
                 
-                  if (adminTookControl) {
-                    appendSystemNotice("Un administrador ha tomado el control del chat.");
-                    return; // 🔥 Pausar flujo automático
+                  if (adminJoinMsg) {
+                    // Mostrar aviso limpio (sin burbuja)
+                    const match = adminJoinMsg.message.match(/^(.+?) se unió al chat$/i);
+                    const adminDisplayName = match ? match[1] : "Un administrador";
+                    appendSystemNotice(`${adminDisplayName} ha tomado el control del chat.`);
+                    return; // 🛑 No continuar con flujo automático
                   }
                 
-                  // ✅ Continuar flujo normal del bot si no hay admin en control
+                  // Continuar flujo automático si ningún admin tomó control
                   const lastNodeId = localStorage.getItem('phoenix_last_node');
                   const lastStepIndex = parseInt(localStorage.getItem('phoenix_last_step_index'), 10);
                 
@@ -354,7 +357,7 @@ function initPhoenixChat() {
                   } else {
                     startChat();
                   }
-                });
+                });                
               }
             };
             buttonRow.appendChild(button);
@@ -618,20 +621,20 @@ function pollAdminControl() {
         );
 
         if (adminJoinMsg) {
-          // Verificar si ya fue mostrado
-          const existing = [...document.querySelectorAll(".phoenix-message")].some(el =>
+          // Evitar mostrar burbuja duplicada
+          const alreadyShown = [...document.querySelectorAll(".phoenix-message")].some(el =>
             el.textContent.includes(adminJoinMsg.message)
           );
-
-          if (!existing) {
-            appendMessage(adminJoinMsg.message, "admin");
-            appendSystemNotice("Un administrador ha tomado el control del chat.");
+          if (!alreadyShown) {
+            const match = adminJoinMsg.message.match(/^(.+?) se unió al chat$/i);
+            const adminDisplayName = match ? match[1] : "Un administrador";
+            appendSystemNotice(`${adminDisplayName} ha tomado el control del chat.`);
           }
 
           clearInterval(interval);
         }
       });
-  }, 3000); // cada 3 segundos
+  }, 3000);
 }
 
 function startChat() {
