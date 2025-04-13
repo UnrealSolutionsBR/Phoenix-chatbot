@@ -73,6 +73,18 @@ add_shortcode('Phoenix_chatbot', function () {
     <?php return ob_get_clean();
 });
 
+// ▸ Shortcode para mostrar el dashboard de administrador
+add_shortcode('Phoenix_dashboard', function () {
+    ob_start(); ?>
+    
+    <div id="phoenix-admin-dashboard-app">
+        <!-- Aquí se cargará dinámicamente el dashboard vía JS -->
+        <p>Cargando el panel de administración...</p>
+    </div>
+
+    <?php return ob_get_clean();
+});
+
 // ▸ Crear tabla en activación
 register_activation_hook(__FILE__, function () {
     global $wpdb;
