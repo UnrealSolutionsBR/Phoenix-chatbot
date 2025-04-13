@@ -27,7 +27,7 @@ add_action('wp_head', function () {
     echo "<link href='https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap' rel='stylesheet'>";
 });
 
-// ▸ Encolar scripts y estilos para el chatbot (frontend)
+// ▸ Encolar scripts y estilos del chatbot (frontend)
 add_action( 'wp_enqueue_scripts', function () {
     $json_path = PHOENIX_CHATBOT_PATH . 'assets/js/chatflow-config.json';
     $flow = [];
@@ -74,15 +74,34 @@ add_shortcode('Phoenix_chatbot', function () {
     <?php return ob_get_clean();
 });
 
-// ▸ Shortcode para el dashboard de administración
+// ▸ Shortcode para mostrar el dashboard admin
 add_shortcode('phoenix_admin_dashboard', function () {
     if (!current_user_can('manage_options')) return '';
-    
+
+    wp_enqueue_style(
+        'phoenix-admin-dashboard-css',
+        PHOENIX_CHATBOT_URL . 'assets/css/admin-dashboard.css',
+        [],
+        filemtime(PHOENIX_CHATBOT_PATH . 'assets/css/admin-dashboard.css')
+    );
+
+    wp_enqueue_script(
+        'phoenix-admin-dashboard-js',
+        PHOENIX_CHATBOT_URL . 'assets/js/admin-dashboard.js',
+        [],
+        filemtime(PHOENIX_CHATBOT_PATH . 'assets/js/admin-dashboard.js'),
+        true
+    );
+
+    wp_localize_script('phoenix-admin-dashboard-js', 'phoenixAdminDashboard', [
+        'ajaxurl' => admin_url('admin-ajax.php'),
+    ]);
+
     $admin = new \PhoenixChatbotAI\Phoenix_Admin_Chat();
     return $admin->render_dashboard_html();
 });
 
-// ▸ Crear tabla de historial al activar el plugin
+// ▸ Crear tabla en activación del plugin
 register_activation_hook(__FILE__, function () {
     global $wpdb;
     $table_name = $wpdb->prefix . 'phoenix_history';
