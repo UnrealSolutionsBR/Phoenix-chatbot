@@ -118,7 +118,7 @@ class Phoenix_Admin_Chat {
                     <td><?= date('Y-m-d H:i', strtotime($chat->last_message)) ?></td>
                     <td><?= $chat->total_messages ?></td>
                     <td>
-                        <button class="phoenix-take-control" data-session-id="<?= esc_attr($chat->session_id) ?>">Take control</button>
+                    <a class="phoenix-take-control" href="<?= esc_url(add_query_arg('phoenix_take_control', $chat->session_id, home_url())) ?>" target="_blank">Take control</a>
                         <button class="phoenix-delete-btn" data-session-id="<?= esc_attr($chat->session_id) ?>">Delete</button>
                     </td>
                 </tr>
