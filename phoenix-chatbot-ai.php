@@ -15,11 +15,9 @@ define( 'PHOENIX_CHATBOT_PATH', plugin_dir_path( __FILE__ ) );
 
 // ▸ Incluir clases necesarias
 require_once PHOENIX_CHATBOT_PATH . 'includes/class-phoenix-history.php';
-require_once PHOENIX_CHATBOT_PATH . 'admin/class-phoenix-admin-chat.php';
 
 // ▸ Iniciar funcionalidades
 new \PhoenixChatbotAI\Phoenix_History();
-new \PhoenixChatbotAI\Phoenix_Admin_Chat();
 
 // ▸ Encolar fuente Open Sans
 add_action('wp_head', function () {
@@ -70,18 +68,6 @@ add_shortcode('Phoenix_chatbot', function () {
             <button id="phoenix-send-btn">Enviar</button>
         </div>
     </div>
-    <?php return ob_get_clean();
-});
-
-// ▸ Shortcode para mostrar el dashboard de administrador
-add_shortcode('Phoenix_dashboard', function () {
-    ob_start(); ?>
-    
-    <div id="phoenix-admin-dashboard-app">
-        <!-- Aquí se cargará dinámicamente el dashboard vía JS -->
-        <p>Cargando el panel de administración...</p>
-    </div>
-
     <?php return ob_get_clean();
 });
 

@@ -64,19 +64,4 @@ class Phoenix_History {
 
         wp_send_json_success($results);
     }
-
-    // 📋 Obtener todas las sesiones activas (para el admin)
-    public function get_sessions() {
-        global $wpdb;
-        $table = $wpdb->prefix . 'phoenix_history';
-
-        $results = $wpdb->get_results("
-            SELECT session_id, MAX(created_at) as last_message
-            FROM $table
-            GROUP BY session_id
-            ORDER BY last_message DESC
-        ");
-
-        wp_send_json_success($results);
-    }
 }
