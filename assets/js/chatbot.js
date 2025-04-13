@@ -604,6 +604,36 @@ function appendOptionsDirect(questionText, options, onClickHandler) {
   });
 }
 
+function pollAdminControl() {
+  const interval = setInterval(() => {
+    fetch(`${phoenixChatbotBaseUrlData.ajaxurl}?action=phoenix_get_messages&session_id=${session_id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success || !Array.isArray(data.data)) return;
+
+        const adminJoinMsg = data.data.find(msg =>
+          msg.sender === 'admin' &&
+          typeof msg.message === 'string' &&
+          msg.message.includes('se unió al chat')
+        );
+
+        if (adminJoinMsg) {
+          // Verificar si ya fue mostrado
+          const existing = [...document.querySelectorAll(".phoenix-message")].some(el =>
+            el.textContent.includes(adminJoinMsg.message)
+          );
+
+          if (!existing) {
+            appendMessage(adminJoinMsg.message, "admin");
+            appendSystemNotice("Un administrador ha tomado el control del chat.");
+          }
+
+          clearInterval(interval);
+        }
+      });
+  }, 3000); // cada 3 segundos
+}
+
 function startChat() {
   const hour = new Date().getHours();
   let greetingKey = 'night';
@@ -649,6 +679,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("phoenix-loader").style.display = "none";
     document.querySelector(".phoenix-chatbot-container").style.display = "flex";
     initPhoenixChat();
+    pollAdminControl();
   }, 1000);
 
   setInterval(() => {
