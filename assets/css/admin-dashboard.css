@@ -1,0 +1,87 @@
+/* Título del dashboard */
+h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: #222;
+  }
+  
+  /* Estadísticas */
+  .phoenix-dashboard-stats {
+    font-size: 16px;
+    margin-bottom: 20px;
+    color: #555;
+  }
+  
+  .phoenix-dashboard-stats span {
+    margin-right: 20px;
+    font-weight: 600;
+  }
+  
+  /* Tabla */
+  table.widefat {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  table.widefat th,
+  table.widefat td {
+    padding: 12px 10px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+  }
+  
+  table.widefat th {
+    background-color: #f7f7f7;
+    font-weight: 600;
+  }
+  
+  table.widefat tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  /* Botones de acción */
+  button.phoenix-delete-btn,
+  button.phoenix-take-control {
+    padding: 6px 12px;
+    font-size: 14px;
+    margin-right: 6px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  
+  button.phoenix-take-control {
+    background-color: #3C7EFF;
+    color: #fff;
+  }
+  
+  button.phoenix-delete-btn {
+    background-color: #e74c3c;
+    color: white;
+  }
+  
+  button.phoenix-delete-btn:hover {
+    background-color: #c0392b;
+  }
+  
+  button.phoenix-take-control:hover {
+    background-color: #2c5fcc;
+  }
+  
+  /* Paginación */
+  .phoenix-pagination {
+    margin-top: 20px;
+  }
+  
+  .phoenix-pagination a {
+    margin-right: 10px;
+    text-decoration: none;
+    color: #3C7EFF;
+  }
+  
+  .phoenix-pagination a.active {
+    font-weight: bold;
+    text-decoration: underline;
+  }
+  
