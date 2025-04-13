@@ -1,18 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Botón de eliminar
+
+    // Manejar eliminación de chats
     document.querySelectorAll('.phoenix-delete-btn').forEach(button => {
       button.addEventListener('click', () => {
         const sessionId = button.dataset.sessionId;
         const row = button.closest('tr');
   
         if (confirm('¿Estás seguro de que quieres eliminar este chat? Esta acción no se puede deshacer.')) {
+  
+          const formData = new FormData();
+          formData.append('action', 'phoenix_bulk_delete');
+          formData.append('session_ids[]', sessionId);
+  
+          console.log('Enviando eliminación AJAX para', sessionId);
+          console.log('Ajax URL:', phoenixAdminDashboard.ajaxurl);
+  
           fetch(phoenixAdminDashboard.ajaxurl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              action: 'phoenix_bulk_delete',
-              'session_ids[]': sessionId
-            })
+            body: formData
           })
           .then(res => res.json())
           .then(response => {
@@ -22,22 +27,22 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
               alert('Error al eliminar el chat.');
             }
+          })
+          .catch(() => {
+            alert('Ocurrió un error inesperado al procesar la eliminación.');
           });
         }
       });
     });
   
-    // Función para mostrar el toast
+    // Función para mostrar notificación toast
     function showToast(message) {
       const toast = document.getElementById('phoenix-toast');
       if (!toast) return;
   
       toast.textContent = message;
       toast.style.display = 'block';
-  
-      setTimeout(() => {
-        toast.style.opacity = '1';
-      }, 10);
+      toast.style.opacity = '1';
   
       setTimeout(() => {
         toast.style.opacity = '0';
@@ -46,5 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 400);
       }, 2500);
     }
+  
   });
   

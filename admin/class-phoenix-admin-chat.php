@@ -12,7 +12,6 @@ class Phoenix_Admin_Chat {
         $this->table = $wpdb->prefix . 'phoenix_history';
 
         add_action('wp_ajax_phoenix_bulk_delete', [$this, 'handle_bulk_delete']);
-        add_action('wp_ajax_nopriv_phoenix_bulk_delete', [$this, 'handle_bulk_delete']);
     }
 
     public function get_chat_stats() {
@@ -27,7 +26,7 @@ class Phoenix_Admin_Chat {
             HAVING SUM(CASE WHEN sender = 'admin' THEN 1 ELSE 0 END) = 0
         ) AS active_chats");
 
-        $trash = 0; // Si en el futuro se implementa estado eliminado
+        $trash = 0; // No implementado aún
 
         return compact('all', 'active', 'trash');
     }
@@ -61,12 +60,9 @@ class Phoenix_Admin_Chat {
             wp_send_json_error('Unauthorized');
         }
 
-        $session_ids = $_POST['session_ids'] ?? [];
-        if (!is_array($session_ids)) {
-            $session_ids = [$session_ids];
-        }
-
+        $session_ids = (array) ($_POST['session_ids'] ?? []);
         global $wpdb;
+
         foreach ($session_ids as $sid) {
             $wpdb->delete($this->table, ['session_id' => sanitize_text_field($sid)]);
         }
@@ -102,7 +98,7 @@ class Phoenix_Admin_Chat {
             <span>Trash (<?= $stats['trash'] ?>)</span>
         </p>
 
-        <table class="widefat fixed striped">
+        <table class="widefat fixed striped phoenix-admin-table">
             <thead>
                 <tr>
                     <th>Chat ID</th>
@@ -145,8 +141,13 @@ class Phoenix_Admin_Chat {
                     </a>
                 <?php endfor; ?>
             </div>
-        <?php endif;
+        <?php endif; ?>
 
-        return ob_get_clean();
+        <!-- Toast visual de confirmación -->
+        <div id="phoenix-toast" style="display:none;position:fixed;bottom:30px;right:30px;padding:12px 20px;background:#27ae60;color:#fff;border-radius:6px;font-weight:600;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.2); transition: opacity 0.3s ease;">
+            Chat eliminado con éxito
+        </div>
+
+        <?php return ob_get_clean();
     }
 }
