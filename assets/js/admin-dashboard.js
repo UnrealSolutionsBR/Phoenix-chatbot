@@ -26,14 +26,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     });
-  
-    // Abrir sesión en nueva ventana (Take control)
-    document.querySelectorAll('.phoenix-take-control').forEach(button => {
-      button.addEventListener('click', () => {
-        const sessionId = button.dataset.sessionId;
-        window.open(`?page=phoenix-take-control&session_id=${sessionId}`, '_blank');
-      });
-    });
-  
   });
   
