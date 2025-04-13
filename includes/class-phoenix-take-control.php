@@ -18,22 +18,23 @@ class Phoenix_Take_Control {
         $admin_name = wp_get_current_user()->display_name;
         $table = $wpdb->prefix . 'phoenix_history';
 
-        // Insertar mensaje de entrada si es la primera vez
+        // Insertar mensaje de entrada si no existe
         $exists = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $table WHERE session_id = %s AND sender = 'admin'",
-            $session_id
+            "SELECT COUNT(*) FROM $table WHERE session_id = %s AND sender = 'admin' AND message LIKE %s",
+            $session_id,
+            "%se unió al chat%"
         ));
 
         if (!$exists) {
             $wpdb->insert($table, [
                 'session_id' => $session_id,
                 'sender'     => 'admin',
-                'message'    => "$admin_name entró al chat",
+                'message'    => "$admin_name se unió al chat",
                 'created_at' => current_time('mysql')
             ]);
         }
 
-        // Enviar nuevo mensaje si fue enviado
+        // Si el admin envió un mensaje
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_message'])) {
             $admin_message = sanitize_text_field($_POST['admin_message']);
             if (!empty($admin_message)) {
@@ -49,13 +50,13 @@ class Phoenix_Take_Control {
             exit;
         }
 
-        // Cargar historial
+        // Obtener historial
         $messages = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM $table WHERE session_id = %s ORDER BY created_at ASC",
             $session_id
         ));
 
-        // Renderizar la vista
+        // Renderizar
         $this->render_view($session_id, $admin_name, $messages);
         exit;
     }
@@ -137,6 +138,24 @@ class Phoenix_Take_Control {
                     background: #2c5fcc;
                 }
             </style>
+            <?php
+            // Encolar el JS del polling
+            wp_enqueue_script(
+                'phoenix-admin-chat',
+                PHOENIX_CHATBOT_URL . 'assets/js/admin-chat.js',
+                [],
+                filemtime(PHOENIX_CHATBOT_PATH . 'assets/js/admin-chat.js'),
+                true
+            );
+
+            wp_localize_script('phoenix-admin-chat', 'phoenixAdminChat', [
+                'ajaxurl'       => admin_url('admin-ajax.php'),
+                'sessionId'     => $session_id,
+                'lastTimestamp' => !empty($messages) ? strtotime(end($messages)->created_at) : 0,
+            ]);
+
+            wp_print_scripts('phoenix-admin-chat');
+            ?>
         </head>
         <body>
         <div id="chat-box">

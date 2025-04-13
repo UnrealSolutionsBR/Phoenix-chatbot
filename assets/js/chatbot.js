@@ -280,26 +280,38 @@ function initPhoenixChat() {
                 startChat();
               } else {
                 session_id = last_chat_session;
-                loadPreviousHistory(session_id, () => {
+                loadPreviousHistory(session_id, (messages) => {
+                  // Detectar si un admin tomó el control
+                  const adminTookControl = messages.some(msg =>
+                    msg.sender === 'admin' &&
+                    typeof msg.message === 'string' &&
+                    msg.message.includes('se unió al chat')
+                  );
+                
+                  if (adminTookControl) {
+                    appendSystemNotice("Un administrador ha tomado el control del chat.");
+                    return; // 🔥 Pausar flujo automático
+                  }
+                
+                  // ✅ Continuar flujo normal del bot si no hay admin en control
                   const lastNodeId = localStorage.getItem('phoenix_last_node');
                   const lastStepIndex = parseInt(localStorage.getItem('phoenix_last_step_index'), 10);
-
+                
                   if (lastNodeId) {
                     currentNode = getNodeById(lastNodeId);
-
+                
                     if (currentNode?.steps) {
                       currentSteps = currentNode.steps;
                       currentStepIndex = isNaN(lastStepIndex) ? 0 : lastStepIndex;
-
+                
                       const step = currentSteps[currentStepIndex];
                       const stepKey = step?.id;
-                      const lastMessage = res.data[res.data.length - 1];
+                      const lastMessage = messages[messages.length - 1];
                       let wasAlreadySent = false;
-
+                
                       if (stepKey && userData[stepKey]) {
                         currentStepIndex++;
                       } else if (lastMessage?.sender === "bot") {
-                        // Verificar si mensaje ya fue enviado
                         if (step?.messages) {
                           wasAlreadySent = step.messages.some(msg => {
                             if (typeof msg === 'string') return msg === lastMessage.message;
@@ -307,24 +319,23 @@ function initPhoenixChat() {
                             return false;
                           });
                         }
-
+                
                         if (step?.question && typeof step.question === 'string') {
                           wasAlreadySent ||= replaceVariables(step.question) === lastMessage.message;
                         }
-
+                
                         if (wasAlreadySent) return;
                       }
-
+                
                       runStep();
                     } else {
-                      const lastMessage = res.data[res.data.length - 1];
+                      const lastMessage = messages[messages.length - 1];
                       let wasAlreadySent = false;
-
+                
                       if (currentNode?.question && currentNode?.options) {
                         wasAlreadySent = replaceVariables(currentNode.question) === lastMessage.message;
-
+                
                         if (wasAlreadySent) {
-                          // Mostrar solo las opciones sin repetir la pregunta
                           appendOptionsDirect(null, currentNode.options, (option) => {
                             userData[currentNode.id] = option;
                             localStorage.setItem('phoenix_userdata', JSON.stringify(userData));
@@ -333,11 +344,11 @@ function initPhoenixChat() {
                             } else {
                               nextNode(currentNode.next);
                             }
-                          });                          
+                          });
                           return;
                         }
                       }
-
+                
                       nextNode(currentNode.id);
                     }
                   } else {
