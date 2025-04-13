@@ -21,6 +21,7 @@ require_once PHOENIX_CHATBOT_PATH . 'admin/class-phoenix-admin-chat.php';
 // ▸ Inicializar clases
 new \PhoenixChatbotAI\Phoenix_History();
 new \PhoenixChatbotAI\Phoenix_Take_Control();
+new \PhoenixChatbotAI\Phoenix_Admin_Chat();
 
 // ▸ Encolar fuente Open Sans (global)
 add_action('wp_head', function () {
