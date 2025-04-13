@@ -11,9 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
-              action: 'phoenix_bulk_delete',
-              session_ids: [sessionId]
-            })
+                action: 'phoenix_bulk_delete',
+                'session_ids[]': sessionId
+              })              
           })
           .then(res => res.json())
           .then(response => {

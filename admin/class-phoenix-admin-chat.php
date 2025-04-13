@@ -58,17 +58,19 @@ class Phoenix_Admin_Chat {
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized');
         }
-
+    
         $session_ids = $_POST['session_ids'] ?? [];
-        if (!is_array($session_ids)) $session_ids = [];
-
+        if (!is_array($session_ids)) $session_ids = [$session_ids];
+    
         global $wpdb;
+        $table = $wpdb->prefix . 'phoenix_history';
+    
         foreach ($session_ids as $sid) {
-            $wpdb->delete($this->table, ['session_id' => sanitize_text_field($sid)]);
+            $wpdb->delete($table, ['session_id' => sanitize_text_field($sid)]);
         }
-
+    
         wp_send_json_success(['deleted' => count($session_ids)]);
-    }
+    }    
 
     public static function generate_numeric_id($session_id) {
         return substr(abs(crc32($session_id)), 0, 5);
