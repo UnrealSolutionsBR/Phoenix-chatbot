@@ -12,10 +12,12 @@ class Phoenix_History {
         add_action('wp_ajax_phoenix_get_messages', [$this, 'get_messages']);
         add_action('wp_ajax_nopriv_phoenix_get_messages', [$this, 'get_messages']);
 
-        add_action('wp_ajax_phoenix_get_sessions', [$this, 'get_sessions']); // ✅ NUEVO
+        add_action('wp_ajax_phoenix_send_admin_message', [$this, 'send_admin_message']);
     }
 
-    // 📝 Guardar mensaje
+    /**
+     * Guardar mensaje del bot o del usuario
+     */
     public function save_message() {
         global $wpdb;
         $table = $wpdb->prefix . 'phoenix_history';
@@ -42,7 +44,9 @@ class Phoenix_History {
         wp_send_json_success(['id' => $wpdb->insert_id]);
     }
 
-    // 📦 Obtener mensajes por sesión
+    /**
+     * Obtener historial de mensajes por sesión
+     */
     public function get_messages() {
         global $wpdb;
         $table = $wpdb->prefix . 'phoenix_history';
@@ -63,5 +67,37 @@ class Phoenix_History {
         $results = $wpdb->get_results($query);
 
         wp_send_json_success($results);
+    }
+
+    /**
+     * Enviar mensaje del admin (AJAX)
+     */
+    public function send_admin_message() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['error' => 'Unauthorized']);
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'phoenix_history';
+
+        $session_id = sanitize_text_field($_POST['session_id'] ?? '');
+        $message    = sanitize_text_field($_POST['message'] ?? '');
+
+        if (!$session_id || !$message) {
+            wp_send_json_error(['error' => 'Faltan datos']);
+        }
+
+        $result = $wpdb->insert($table, [
+            'session_id' => $session_id,
+            'sender'     => 'admin',
+            'message'    => $message,
+            'created_at' => current_time('mysql')
+        ]);
+
+        if ($result === false) {
+            wp_send_json_error(['error' => 'DB error']);
+        }
+
+        wp_send_json_success(['id' => $wpdb->insert_id]);
     }
 }

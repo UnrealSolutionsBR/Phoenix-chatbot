@@ -18,7 +18,7 @@ class Phoenix_Take_Control {
         $admin_name = wp_get_current_user()->display_name;
         $table = $wpdb->prefix . 'phoenix_history';
 
-        // Insertar mensaje de entrada si no existe
+        // Insertar mensaje si no se ha registrado la entrada del admin
         $exists = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM $table WHERE session_id = %s AND sender = 'admin' AND message LIKE %s",
             $session_id,
@@ -34,29 +34,13 @@ class Phoenix_Take_Control {
             ]);
         }
 
-        // Si el admin envió un mensaje
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_message'])) {
-            $admin_message = sanitize_text_field($_POST['admin_message']);
-            if (!empty($admin_message)) {
-                $wpdb->insert($table, [
-                    'session_id' => $session_id,
-                    'sender'     => 'admin',
-                    'message'    => $admin_message,
-                    'created_at' => current_time('mysql')
-                ]);
-            }
-
-            wp_redirect(add_query_arg('phoenix_take_control', $session_id, home_url()));
-            exit;
-        }
-
         // Obtener historial
         $messages = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM $table WHERE session_id = %s ORDER BY created_at ASC",
             $session_id
         ));
 
-        // Renderizar
+        // Renderizar interfaz
         $this->render_view($session_id, $admin_name, $messages);
         exit;
     }
@@ -139,22 +123,21 @@ class Phoenix_Take_Control {
                 }
             </style>
             <?php
-            // Encolar el JS del polling
+            // Encolar el script JS para AJAX control
             wp_enqueue_script(
-                'phoenix-admin-chat',
-                PHOENIX_CHATBOT_URL . 'assets/js/admin-chat.js',
+                'phoenix-take-control-js',
+                PHOENIX_CHATBOT_URL . 'assets/js/take-control.js',
                 [],
-                filemtime(PHOENIX_CHATBOT_PATH . 'assets/js/admin-chat.js'),
+                filemtime(PHOENIX_CHATBOT_PATH . 'assets/js/take-control.js'),
                 true
             );
 
-            wp_localize_script('phoenix-admin-chat', 'phoenixAdminChat', [
-                'ajaxurl'       => admin_url('admin-ajax.php'),
-                'sessionId'     => $session_id,
-                'lastTimestamp' => !empty($messages) ? strtotime(end($messages)->created_at) : 0,
+            wp_localize_script('phoenix-take-control-js', 'phoenixTakeControl', [
+                'ajaxurl'   => admin_url('admin-ajax.php'),
+                'sessionId' => $session_id,
             ]);
 
-            wp_print_scripts('phoenix-admin-chat');
+            wp_print_scripts('phoenix-take-control-js');
             ?>
         </head>
         <body>
@@ -170,8 +153,8 @@ class Phoenix_Take_Control {
                 <?php endforeach; ?>
             </div>
 
-            <form id="chat-form" method="post">
-                <input type="text" name="admin_message" placeholder="Escribe tu respuesta..." required>
+            <form id="chat-form">
+                <input type="text" name="admin_message" id="admin_message_input" placeholder="Escribe tu respuesta..." required>
                 <button type="submit">Enviar</button>
             </form>
         </div>

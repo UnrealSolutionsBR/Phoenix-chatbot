@@ -40,6 +40,12 @@ function saveMessageToServer(sender, message) {
       sender: sender,
       message: message
     })
+  })
+  .then(() => {
+    // ✅ Registrar timestamp si el mensaje fue enviado por el bot o admin
+    if (sender === 'bot' || sender === 'admin') {
+      lastMessageTimestamp = Math.floor(Date.now() / 1000);
+    }
   });
 }
 
@@ -691,6 +697,28 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }, 60000);
 });
+
+function pollUserMessages() {
+  setInterval(() => {
+    fetch(`${phoenixChatbotBaseUrlData.ajaxurl}?action=phoenix_get_messages&session_id=${session_id}&after=${lastMessageTimestamp}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success || !Array.isArray(data.data)) return;
+
+        data.data.forEach(msg => {
+          // Evitar mensajes ya mostrados (simple protección extra)
+          const exists = [...document.querySelectorAll('.phoenix-message')].some(el =>
+            el.textContent.includes(msg.message)
+          );
+
+          if (!exists) {
+            appendMessage(msg.message, msg.sender);
+            lastMessageTimestamp = Math.max(lastMessageTimestamp, Math.floor(Date.parse(msg.created_at) / 1000));
+          }
+        });
+      });
+  }, 3000); // cada 3 segundos
+}
 
 function formatTimeElapsed(timestamp) {
   const now = new Date();
