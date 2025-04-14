@@ -7,6 +7,8 @@ class Phoenix_Take_Control {
 
     public function __construct() {
         add_action('template_redirect', [$this, 'render_take_control']);
+        add_action('wp_ajax_phoenix_send_admin_message', [$this, 'send_admin_message']);
+        add_action('wp_ajax_phoenix_poll_messages', [$this, 'poll_messages']);
     }
 
     public function render_take_control() {
@@ -33,31 +35,73 @@ class Phoenix_Take_Control {
             ]);
         }
 
-        // Enviar nuevo mensaje si fue enviado
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_message'])) {
-            $admin_message = sanitize_text_field($_POST['admin_message']);
-            if (!empty($admin_message)) {
-                $wpdb->insert($table, [
-                    'session_id' => $session_id,
-                    'sender'     => 'admin',
-                    'message'    => $admin_message,
-                    'created_at' => current_time('mysql')
-                ]);
-            }
-
-            wp_redirect(add_query_arg('phoenix_take_control', $session_id, home_url()));
-            exit;
-        }
-
         // Cargar historial
         $messages = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM $table WHERE session_id = %s ORDER BY created_at ASC",
+            "SELECT * FROM $table WHERE session_id = %s ORDER BY id ASC",
             $session_id
         ));
 
         // Renderizar la vista
         $this->render_view($session_id, $admin_name, $messages);
         exit;
+    }
+
+    public function send_admin_message() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['error' => 'Unauthorized']);
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'phoenix_history';
+
+        $session_id = sanitize_text_field($_POST['session_id'] ?? '');
+        $message    = sanitize_text_field($_POST['message'] ?? '');
+
+        if (empty($session_id) || empty($message)) {
+            wp_send_json_error(['error' => 'Missing fields']);
+        }
+
+        $wpdb->insert($table, [
+            'session_id' => $session_id,
+            'sender'     => 'admin',
+            'message'    => $message,
+            'created_at' => current_time('mysql')
+        ]);
+
+        if ($wpdb->last_error) {
+            wp_send_json_error(['error' => $wpdb->last_error]);
+        }
+
+        wp_send_json_success([
+            'id'         => $wpdb->insert_id,
+            'message'    => $message,
+            'created_at' => current_time('mysql'),
+            'sender'     => 'admin'
+        ]);
+    }
+
+    public function poll_messages() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['error' => 'Unauthorized']);
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'phoenix_history';
+
+        $session_id = sanitize_text_field($_GET['session_id'] ?? '');
+        $last_id    = intval($_GET['after_id'] ?? 0);
+
+        if (empty($session_id)) {
+            wp_send_json_error(['error' => 'Missing session ID']);
+        }
+
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $table WHERE session_id = %s AND id > %d ORDER BY id ASC",
+            $session_id,
+            $last_id
+        ));
+
+        wp_send_json_success($results);
     }
 
     private function render_view($session_id, $admin_name, $messages) {
@@ -137,6 +181,13 @@ class Phoenix_Take_Control {
                     background: #2c5fcc;
                 }
             </style>
+            <script>
+                const phoenixTakeControl = {
+                    ajaxurl: "<?= admin_url('admin-ajax.php') ?>",
+                    sessionId: "<?= esc_js($session_id) ?>"
+                };
+            </script>
+            <script src="<?= PHOENIX_CHATBOT_URL . 'assets/js/take-control.js' ?>?ver=<?= time() ?>"></script>
         </head>
         <body>
         <div id="chat-box">
@@ -144,15 +195,15 @@ class Phoenix_Take_Control {
 
             <div id="chat-messages">
                 <?php foreach ($messages as $msg): ?>
-                    <div class="message <?= esc_attr($msg->sender) ?>">
+                    <div class="message <?= esc_attr($msg->sender) ?>" data-id="<?= esc_attr($msg->id) ?>">
                         <strong><?= ucfirst(esc_html($msg->sender)) ?>:</strong> <?= esc_html($msg->message) ?>
                         <span class="timestamp"><?= date('Y-m-d H:i', strtotime($msg->created_at)) ?></span>
                     </div>
                 <?php endforeach; ?>
             </div>
 
-            <form id="chat-form" method="post">
-                <input type="text" name="admin_message" placeholder="Escribe tu respuesta..." required>
+            <form id="chat-form">
+                <input type="text" id="admin_message_input" placeholder="Escribe tu respuesta..." required>
                 <button type="submit">Enviar</button>
             </form>
         </div>

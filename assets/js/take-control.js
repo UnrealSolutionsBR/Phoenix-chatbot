@@ -2,15 +2,33 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('chat-form');
   const input = document.getElementById('admin_message_input');
   const sessionId = phoenixTakeControl.sessionId;
+  const chatContainer = document.getElementById('chat-messages');
+  let lastId = 0;
 
+  // Obtener el último ID actual en el historial
+  const allMessages = chatContainer.querySelectorAll('.message');
+  if (allMessages.length > 0) {
+    const lastMsg = allMessages[allMessages.length - 1];
+    lastId = parseInt(lastMsg.dataset.id) || 0;
+  }
+
+  // Función para renderizar un mensaje en el DOM
+  function renderMessage(msg) {
+    const div = document.createElement('div');
+    div.className = 'message ' + msg.sender;
+    div.dataset.id = msg.id;
+    div.innerHTML = `<strong>${capitalize(msg.sender)}:</strong> ${escapeHtml(msg.message)}
+      <span class="timestamp">${formatDate(msg.created_at)}</span>`;
+    chatContainer.appendChild(div);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  // Envío del mensaje por AJAX
   form.addEventListener('submit', function (e) {
     e.preventDefault();
 
     const message = input.value.trim();
     if (!message) return;
-
-    const now = new Date();
-    const created_at = now.toISOString().slice(0, 19).replace('T', ' '); // formato MySQL
 
     fetch(phoenixTakeControl.ajaxurl, {
       method: "POST",
@@ -23,28 +41,46 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .then(res => res.json())
     .then(data => {
-      console.log("📤 Admin message sent:", data);
       if (data.success) {
         input.value = '';
-
-        // 🟢 Mostrar el mensaje en el chat inmediatamente
-        if (typeof renderMessage === 'function') {
-          const fakeMsg = {
-            sender: 'admin',
-            message: message,
-            created_at: created_at
-          };
-          renderMessage(fakeMsg);
-
-          // 🟢 Actualizar el lastTimestamp en global
-          if (typeof lastTimestamp !== 'undefined') {
-            lastTimestamp = Math.floor(now.getTime() / 1000);
-            console.log("⏱️ lastTimestamp actualizado tras enviar:", lastTimestamp);
-          }
-        }
+        renderMessage(data);
+        lastId = data.id;
       } else {
         alert("Error al enviar mensaje.");
       }
     });
   });
+
+  // Polling cada 3 segundos
+  setInterval(() => {
+    fetch(`${phoenixTakeControl.ajaxurl}?action=phoenix_poll_messages&session_id=${sessionId}&after_id=${lastId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          data.data.forEach(msg => {
+            renderMessage(msg);
+            lastId = msg.id;
+          });
+        }
+      });
+  }, 3000);
+
+  // Utilidades
+  function formatDate(datetime) {
+    const date = new Date(datetime);
+    return date.toLocaleString('es-ES', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function capitalize(text) {
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
 });
