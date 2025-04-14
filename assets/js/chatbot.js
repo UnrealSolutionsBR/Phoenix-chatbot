@@ -60,12 +60,23 @@ function loadPreviousHistory(session_id, callback) {
           appendMessage(msg.message, msg.sender, true, true); // skipHistory + restored
         });
 
+        // 🛑 DETENER FLUJO si el admin tomó el control
+        const controlMessage = messages.find(
+          msg => msg.sender === 'admin' && /tom[oó] el control del chat$/i.test(msg.message)
+        );
+
+        if (controlMessage) {
+          appendSystemNotice(controlMessage.message);
+          return; // ⛔ Detener flujo
+        }
+
         callback(messages);
       } else {
         callback([]);
       }
     });
 }
+
 
 function appendMessage(content, sender, skipHistory = false, isRestored = false) {
   const messages = document.getElementById("phoenix-chat-messages");
