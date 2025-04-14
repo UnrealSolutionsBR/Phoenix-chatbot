@@ -60,14 +60,19 @@ function loadPreviousHistory(session_id, callback) {
           appendMessage(msg.message, msg.sender, true, true); // skipHistory + restored
         });
 
-        // 🛑 DETENER FLUJO si el admin tomó el control
+        // 🛑 DETENER FLUJO si el admin tomó el control (detecta mensaje tipo "Admin: Nombre entró al chat")
         const controlMessage = messages.find(
-          msg => msg.sender === 'admin' && /tom[oó] el control del chat$/i.test(msg.message)
+          msg => msg.sender === 'admin' && /entr[oó] al chat$/i.test(msg.message)
         );
 
         if (controlMessage) {
-          appendSystemNotice(controlMessage.message);
-          return; // ⛔ Detener flujo
+          const extractedAdmin = controlMessage.message
+            .replace(/^Admin:\s*/i, '')
+            .replace(/\s+entr[oó] al chat$/i, '')
+            .trim();
+
+          appendSystemNotice(`${extractedAdmin} tomó el control del chat`);
+          return; // ⛔ Detener flujo del bot
         }
 
         callback(messages);
@@ -76,7 +81,6 @@ function loadPreviousHistory(session_id, callback) {
       }
     });
 }
-
 
 function appendMessage(content, sender, skipHistory = false, isRestored = false) {
   const messages = document.getElementById("phoenix-chat-messages");
