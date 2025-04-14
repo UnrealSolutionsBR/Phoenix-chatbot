@@ -11,6 +11,7 @@ const phoenixAssistants = [
 
 const activeAssistant = phoenixAssistants[Math.floor(Math.random() * phoenixAssistants.length)];
 let botMessageTimes = [];
+const renderedMessageIds = new Set(); // ✅ IDs ya mostrados para evitar duplicados
 let userData = {};
 userData.bot_name = activeAssistant.name;
 let currentStepIndex = 0;
@@ -57,8 +58,10 @@ function loadPreviousHistory(session_id, callback) {
         messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
         messages.forEach(msg => {
-          appendMessage(msg.message, msg.sender, true, true); // skipHistory + restored
+          appendMessage(msg.message, msg.sender, true, true);
+          renderedMessageIds.add(msg.id); // ✅ Marcar como ya mostrado
         });
+        
 
         // 🛑 DETENER FLUJO si el admin tomó el control (detecta mensaje tipo "Admin: Nombre entró al chat")
         const controlMessage = messages.find(
@@ -668,36 +671,40 @@ document.addEventListener("DOMContentLoaded", function () {
   }, 1000);
 
   setInterval(() => {
+    botMessageTimes.forEach(({ meta, timestamp }) => {
+      meta.textContent = `${activeAssistant.name} • ${formatTimeElapsed(timestamp)}`;
+    });
+  }, 60000);
+
+  // 🔁 Polling para mensajes nuevos
+  setInterval(() => {
     if (botStopped || !session_id) return;
-  
+
     fetch(`${phoenixChatbotBaseUrlData.ajaxurl}?action=phoenix_get_messages&session_id=${session_id}&after=${lastMessageId}`)
       .then(res => res.json())
       .then(res => {
         if (res.success && Array.isArray(res.data)) {
           res.data.forEach(msg => {
+            if (renderedMessageIds.has(msg.id)) return; // ✅ Ya fue mostrado
+          
             lastMessageId = Math.max(lastMessageId, msg.id);
-  
-            const isAdminControl = msg.sender === 'admin' && /entr[oó] al chat$/i.test(msg.message);
-  
-            // 👤 Evitar mostrar burbuja del mensaje "Admin: ... entró al chat"
-            if (!isAdminControl) {
-              appendMessage(msg.message, msg.sender, true, true);
-            }
-  
-            // 🛑 Mostrar aviso de control y detener flujo
-            if (isAdminControl) {
+            renderedMessageIds.add(msg.id); // ✅ Marcarlo como mostrado
+          
+            appendMessage(msg.message, msg.sender, true, true);
+          
+            if (msg.sender === 'admin' && /entr[oó] al chat$/i.test(msg.message)) {
               const admin = msg.message
                 .replace(/^Admin:\s*/i, '')
                 .replace(/\s+entr[oó] al chat$/i, '')
                 .trim();
-  
+          
               appendSystemNotice(`${admin} tomó el control del chat`);
               botStopped = true;
             }
-          });
+          });          
         }
       });
-  }, 3000);  
+  }, 3000);
 });
 
 
