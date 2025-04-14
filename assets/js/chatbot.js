@@ -668,37 +668,36 @@ document.addEventListener("DOMContentLoaded", function () {
   }, 1000);
 
   setInterval(() => {
-    botMessageTimes.forEach(({ meta, timestamp }) => {
-      meta.textContent = `${activeAssistant.name} • ${formatTimeElapsed(timestamp)}`;
-    });
-  }, 60000);
-
-  // 🔁 Polling para mensajes nuevos
-  setInterval(() => {
     if (botStopped || !session_id) return;
-
+  
     fetch(`${phoenixChatbotBaseUrlData.ajaxurl}?action=phoenix_get_messages&session_id=${session_id}&after=${lastMessageId}`)
       .then(res => res.json())
       .then(res => {
         if (res.success && Array.isArray(res.data)) {
           res.data.forEach(msg => {
             lastMessageId = Math.max(lastMessageId, msg.id);
-
-            appendMessage(msg.message, msg.sender, true, true);
-
-            if (msg.sender === 'admin' && /entr[oó] al chat$/i.test(msg.message)) {
+  
+            const isAdminControl = msg.sender === 'admin' && /entr[oó] al chat$/i.test(msg.message);
+  
+            // 👤 Evitar mostrar burbuja del mensaje "Admin: ... entró al chat"
+            if (!isAdminControl) {
+              appendMessage(msg.message, msg.sender, true, true);
+            }
+  
+            // 🛑 Mostrar aviso de control y detener flujo
+            if (isAdminControl) {
               const admin = msg.message
                 .replace(/^Admin:\s*/i, '')
                 .replace(/\s+entr[oó] al chat$/i, '')
                 .trim();
-
+  
               appendSystemNotice(`${admin} tomó el control del chat`);
               botStopped = true;
             }
           });
         }
       });
-  }, 3000);
+  }, 3000);  
 });
 
 
