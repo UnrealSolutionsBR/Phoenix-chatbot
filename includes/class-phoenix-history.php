@@ -12,7 +12,7 @@ class Phoenix_History {
         add_action('wp_ajax_phoenix_get_messages', [$this, 'get_messages']);
         add_action('wp_ajax_nopriv_phoenix_get_messages', [$this, 'get_messages']);
 
-        add_action('wp_ajax_phoenix_get_sessions', [$this, 'get_sessions']); // ✅ NUEVO
+        add_action('wp_ajax_phoenix_get_sessions', [$this, 'get_sessions']); // ✅ En caso de que se use más adelante
     }
 
     // 📝 Guardar mensaje
@@ -42,26 +42,31 @@ class Phoenix_History {
         wp_send_json_success(['id' => $wpdb->insert_id]);
     }
 
-    // 📦 Obtener mensajes por sesión
+    // 📦 Obtener mensajes por sesión (basado en ID, no timestamp)
     public function get_messages() {
         global $wpdb;
         $table = $wpdb->prefix . 'phoenix_history';
 
         $session_id = sanitize_text_field($_GET['session_id'] ?? '');
-        $since      = isset($_GET['after']) ? intval($_GET['after']) : 0;
+        $since_id   = isset($_GET['after']) ? intval($_GET['after']) : 0;
 
         if (empty($session_id)) {
             wp_send_json_error(['error' => 'Missing session_id']);
         }
 
         $query = $wpdb->prepare(
-            "SELECT * FROM $table WHERE session_id = %s AND UNIX_TIMESTAMP(created_at) > %d ORDER BY created_at ASC",
+            "SELECT * FROM $table WHERE session_id = %s AND id > %d ORDER BY id ASC",
             $session_id,
-            $since
+            $since_id
         );
 
         $results = $wpdb->get_results($query);
 
         wp_send_json_success($results);
+    }
+
+    // 🧪 (Futuro) Obtener sesiones activas — aún no implementado
+    public function get_sessions() {
+        wp_send_json_success([]); // Placeholder
     }
 }
