@@ -83,4 +83,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function capitalize(text) {
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
+  window.addEventListener("beforeunload", function (e) {
+    const sessionId = phoenixTakeControlData.session_id;
+  
+    if (!sessionId) return;
+  
+    navigator.sendBeacon(
+      phoenixTakeControlData.ajaxurl,
+      new URLSearchParams({
+        action: "phoenix_admin_left_chat",
+        session_id: sessionId,
+      })
+    );
+  });  
 });

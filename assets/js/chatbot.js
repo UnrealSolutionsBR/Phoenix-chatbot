@@ -684,15 +684,28 @@ setInterval(() => {
           lastMessageId = Math.max(lastMessageId, msg.id);
 
           // Mostrar solo mensaje de aviso del admin
-          if (msg.sender === 'admin' && /entr[oó] al chat$/i.test(msg.message) && !hasControlNoticeBeenShown) {
-            const admin = msg.message
-              .replace(/^Admin:\s*/i, '')
-              .replace(/\s+entr[oó] al chat$/i, '')
-              .trim();
+          if (msg.sender === 'admin') {
+            const messageText = msg.message.toLowerCase();
           
-            appendSystemNotice(`${admin} tomó el control del chat`);
-            hasControlNoticeBeenShown = true;
-            botStopped = true;
+            if (/entr[oó] al chat$/.test(messageText) && !hasControlNoticeBeenShown) {
+              const admin = msg.message
+                .replace(/^Admin:\s*/i, '')
+                .replace(/\s+entr[oó] al chat$/i, '')
+                .trim();
+          
+              appendSystemNotice(`${admin} tomó el control del chat`);
+              hasControlNoticeBeenShown = true;
+              botStopped = true;
+            }
+          
+            if (/sal[ií]o del chat$/.test(messageText)) {
+              const admin = msg.message
+                .replace(/^Admin:\s*/i, '')
+                .replace(/\s+sal[ií]o del chat$/i, '')
+                .trim();
+          
+              appendSystemNotice(`${admin} salió del chat`);
+            }
           }          
         });
       }
