@@ -83,17 +83,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function capitalize(text) {
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
-  window.addEventListener("beforeunload", function (e) {
-    const sessionId = phoenixTakeControlData.session_id;
-  
+
+  // Notificar al backend cuando el admin cierra la ventana
+  window.addEventListener("beforeunload", function () {
     if (!sessionId) return;
-  
+
     navigator.sendBeacon(
-      phoenixTakeControlData.ajaxurl,
+      phoenixTakeControl.ajaxurl,
       new URLSearchParams({
         action: "phoenix_admin_left_chat",
-        session_id: sessionId,
+        session_id: sessionId
       })
     );
-  });  
+  });
 });
