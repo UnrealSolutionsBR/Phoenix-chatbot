@@ -182,6 +182,7 @@ class Phoenix_Take_Control {
                 }
             </style>
             <script>
+                // ✅ Asegurar que phoenixTakeControl esté definido globalmente
                 const phoenixTakeControl = {
                     ajaxurl: "<?= admin_url('admin-ajax.php') ?>",
                     sessionId: "<?= esc_js($session_id) ?>",

@@ -45,41 +45,61 @@ function saveMessageToServer(sender, message) {
 }
 
 function loadPreviousHistory(session_id, callback) {
+  console.log("📦 Cargando historial para la sesión:", session_id);
+
   fetch(`${phoenixChatbotBaseUrlData.ajaxurl}?action=phoenix_get_messages&session_id=${session_id}`)
     .then(res => res.json())
     .then(res => {
       if (res.success && Array.isArray(res.data)) {
         const messages = res.data;
+        console.log("📜 Historial recibido:", messages);
 
-        // 🧼 LIMPIAR ANTES DE MOSTRAR HISTORIAL
+        // 🧼 Limpiar mensajes actuales del DOM
         document.getElementById("phoenix-chat-messages").innerHTML = '';
 
         // Ordenar por fecha
         messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-        let hasControlNoticeBeenShown = false;
-
         messages.forEach(msg => {
-          const isControlMsg = msg.sender === 'admin' && /entr[oó] al chat$/i.test(msg.message);
+          const messageText = msg.message.toLowerCase();
+          const isJoinMsg = msg.sender === 'admin' && /entr[oó] al chat$/.test(messageText);
+          const isExitMsg = msg.sender === 'admin' && /sal[ií]o del chat$/.test(messageText);
 
-          if (isControlMsg && !hasControlNoticeBeenShown) {
-            const extractedAdmin = msg.message
-              .replace(/^Admin:\s*/i, '')
+          if (isJoinMsg && !hasControlNoticeBeenShown) {
+            const admin = msg.message
+              .replace(/^admin:\s*/i, '')
               .replace(/\s+entr[oó] al chat$/i, '')
               .trim();
-            appendSystemNotice(`${extractedAdmin} tomó el control del chat`);
+            console.log("🟢 Admin entró (historial):", admin);
+            appendSystemNotice(`${admin} tomó el control del chat`);
             hasControlNoticeBeenShown = true;
+
+          } else if (isExitMsg) {
+            const admin = msg.message
+              .replace(/^admin:\s*/i, '')
+              .replace(/\s+sal[ií]o del chat$/i, '')
+              .trim();
+            console.log("🔴 Admin salió (historial):", admin);
+            appendSystemNotice(`${admin} salió del chat`);
+
           } else {
+            console.log("💬 Mensaje restaurado:", msg);
             appendMessage(msg.message, msg.sender, true, true);
           }
-        });
 
-        if (hasControlNoticeBeenShown) return;
+          // 🧠 Actualizar el ID del último mensaje procesado
+          lastMessageId = Math.max(lastMessageId, msg.id);
+        });
 
         callback(messages);
       } else {
+        console.warn("⚠️ No se encontraron mensajes previos o hubo un error.");
         callback([]);
       }
+    })
+    .catch(error => {
+      console.error("❌ Error cargando historial:", error);
+      callback([]);
     });
 }
 
@@ -662,57 +682,58 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }, 60000);
   // ✅ Detección del control por parte del admin
-let lastMessageId = 0;
-let botStopped = false;
-
-fetch(`${phoenixChatbotBaseUrlData.ajaxurl}?action=phoenix_get_messages&session_id=${session_id}`)
-  .then(res => res.json())
-  .then(res => {
-    if (res.success && Array.isArray(res.data) && res.data.length > 0) {
-      lastMessageId = res.data[res.data.length - 1].id;
-    }
-  });
-
+  let lastMessageId = 0;
+  let botStopped = false;
+  
+  fetch(`${phoenixChatbotBaseUrlData.ajaxurl}?action=phoenix_get_messages&session_id=${session_id}`)
+    .then(res => res.json())
+    .then(res => {
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        lastMessageId = res.data[res.data.length - 1].id;
+      }
+    });
+  
   setInterval(() => {
-    if (botStopped || !session_id) return;
+    if (!session_id) return;
   
     fetch(`${phoenixChatbotBaseUrlData.ajaxurl}?action=phoenix_get_messages&session_id=${session_id}&after=${lastMessageId}`)
       .then(res => res.json())
       .then(res => {
         if (res.success && Array.isArray(res.data)) {
           res.data.forEach(msg => {
-            lastMessageId = Math.max(lastMessageId, msg.id);
-  
-            if (msg.sender === 'admin') {
+            if (msg.id > lastMessageId) {
               const messageText = msg.message.toLowerCase();
   
               if (/entr[oó] al chat$/.test(messageText) && !hasControlNoticeBeenShown) {
                 const admin = msg.message
-                  .replace(/^Admin:\s*/i, '')
+                  .replace(/^admin:\s*/i, '')
                   .replace(/\s+entr[oó] al chat$/i, '')
                   .trim();
   
                 appendSystemNotice(`${admin} tomó el control del chat`);
                 hasControlNoticeBeenShown = true;
-                botStopped = true;
-                return;
+  
+                botStopped = true; // 🟡 Solo detiene el flujo automático, no el polling
               }
   
-              // ✅ NUEVO BLOQUE PARA DETECTAR CUANDO EL ADMIN SALE
-              if (/sal[ií]ó del chat$/.test(messageText)) {
+              if (/sal[ií]o del chat$/.test(messageText)) {
                 const admin = msg.message
-                  .replace(/^Admin:\s*/i, '')
-                  .replace(/\s+sal[ií]ó del chat$/i, '')
+                  .replace(/^admin:\s*/i, '')
+                  .replace(/\s+sal[ií]o del chat$/i, '')
                   .trim();
   
                 appendSystemNotice(`${admin} salió del chat`);
-                return;
               }
+  
+              lastMessageId = Math.max(lastMessageId, msg.id);
             }
           });
         }
+      })
+      .catch(err => {
+        console.error("❌ Error en el polling de mensajes:", err);
       });
-  }, 3000);
+  }, 3000);          
 });
 
 function formatTimeElapsed(timestamp) {

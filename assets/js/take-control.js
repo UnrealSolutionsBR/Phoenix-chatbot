@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('chat-form');
   const input = document.getElementById('admin_message_input');
   const sessionId = phoenixTakeControl.sessionId;
+  const adminName = phoenixTakeControl.adminName;
   const chatContainer = document.getElementById('chat-messages');
   let lastId = 0;
 
@@ -65,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }, 3000);
 
-  // Utilidades
+  // Función: Formatear fecha y hora
   function formatDate(datetime) {
     const date = new Date(datetime);
     return date.toLocaleString('es-ES', {
@@ -74,21 +75,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Función: Escapar HTML
   function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
   }
 
+  // Función: Capitalizar
   function capitalize(text) {
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 });
-// Detectar si el admin cierra la página (o recarga)
+
+// 🔴 Registrar mensaje al salir del chat (antes deunload)
 window.addEventListener('beforeunload', () => {
-  navigator.sendBeacon(phoenixTakeControl.ajaxurl, new URLSearchParams({
-    action: 'phoenix_send_admin_message',
-    session_id: sessionId,
-    message: `Admin: ${phoenixTakeControl.adminName} salió del chat`
-  }));
+  if (phoenixTakeControl && phoenixTakeControl.sessionId && phoenixTakeControl.adminName) {
+    navigator.sendBeacon(phoenixTakeControl.ajaxurl, new URLSearchParams({
+      action: 'phoenix_send_admin_message',
+      session_id: phoenixTakeControl.sessionId,
+      message: `${phoenixTakeControl.adminName} salió del chat`
+    }));
+  }
 });
