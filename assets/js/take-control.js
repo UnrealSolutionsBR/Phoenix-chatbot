@@ -84,3 +84,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 });
+// Detectar si el admin cierra la página (o recarga)
+window.addEventListener('beforeunload', () => {
+  navigator.sendBeacon(phoenixTakeControl.ajaxurl, new URLSearchParams({
+    action: 'phoenix_send_admin_message',
+    session_id: sessionId,
+    message: `Admin: ${phoenixTakeControl.adminName} salió del chat`
+  }));
+});

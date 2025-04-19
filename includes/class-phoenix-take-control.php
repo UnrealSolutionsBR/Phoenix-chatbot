@@ -184,7 +184,8 @@ class Phoenix_Take_Control {
             <script>
                 const phoenixTakeControl = {
                     ajaxurl: "<?= admin_url('admin-ajax.php') ?>",
-                    sessionId: "<?= esc_js($session_id) ?>"
+                    sessionId: "<?= esc_js($session_id) ?>",
+                    adminName: "<?= esc_js($admin_name) ?>"
                 };
             </script>
             <script src="<?= PHOENIX_CHATBOT_URL . 'assets/js/take-control.js' ?>?ver=<?= time() ?>"></script>
