@@ -9,6 +9,26 @@ class Phoenix_Take_Control {
         add_action('template_redirect', [$this, 'render_take_control']);
         add_action('wp_ajax_phoenix_send_admin_message', [$this, 'send_admin_message']);
         add_action('wp_ajax_phoenix_poll_messages', [$this, 'poll_messages']);
+        add_action('wp_ajax_phoenix_admin_left_chat', [$this, 'handle_admin_left']);
+    }
+
+    public function handle_admin_left() {
+        $session_id = sanitize_text_field($_POST['session_id']);
+        $admin_name = wp_get_current_user()->display_name;
+    
+        if ($session_id && $admin_name) {
+            global $wpdb;
+            $wpdb->insert("{$wpdb->prefix}phoenix_history", [
+                'session_id' => $session_id,
+                'sender'     => 'admin',
+                'message'    => "Admin: {$admin_name} salió del chat",
+                'created_at' => current_time('mysql', 1)
+            ]);
+    
+            wp_send_json_success();
+        }
+    
+        wp_send_json_error();
     }
 
     public function render_take_control() {
