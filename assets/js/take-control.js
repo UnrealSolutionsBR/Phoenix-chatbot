@@ -84,3 +84,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 });
+window.addEventListener('beforeunload', () => {
+  const data = new URLSearchParams({
+    action: 'phoenix_admin_left_chat',
+    session_id: phoenixTakeControl.sessionId
+  });
+
+  navigator.sendBeacon(phoenixTakeControl.ajaxurl, data);
+});
